@@ -120,6 +120,14 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides code actions (quick fixes). See ``CodeActionDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var codeActionDelegate: CodeActionDelegate? {
+        didSet {
+            codeActionModel.delegate = codeActionDelegate
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -224,6 +232,8 @@ public class TextViewController: NSViewController {
 
     var signatureHelpModel: SignatureHelpModel
 
+    var codeActionModel: CodeActionModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -254,7 +264,8 @@ public class TextViewController: NSViewController {
         completionDelegate: CodeSuggestionDelegate? = nil,
         jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil,
         hoverDelegate: HoverDelegate? = nil,
-        signatureHelpDelegate: SignatureHelpDelegate? = nil
+        signatureHelpDelegate: SignatureHelpDelegate? = nil,
+        codeActionDelegate: CodeActionDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -280,12 +291,17 @@ public class TextViewController: NSViewController {
             controller: nil,
             delegate: signatureHelpDelegate
         )
+        self.codeActionModel = CodeActionModel(
+            controller: nil,
+            delegate: codeActionDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
         jumpToDefinitionModel.controller = self
         hoverModel.controller = self
         signatureHelpModel.controller = self
+        codeActionModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),

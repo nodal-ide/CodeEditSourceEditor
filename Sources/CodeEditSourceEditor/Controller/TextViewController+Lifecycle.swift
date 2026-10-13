@@ -258,6 +258,9 @@ extension TextViewController {
         case (commandKey, "/"):
             handleCommandSlash()
             return nil
+        case (commandKey, "."):
+            showCodeActions()
+            return nil
         case (commandKey, "["):
             handleIndent(inwards: true)
             return nil

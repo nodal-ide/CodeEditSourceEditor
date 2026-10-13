@@ -88,6 +88,12 @@ extension TextViewController {
         }
     }
 
+    /// Requests and presents code actions (quick fixes) for the current cursor.
+    public func showCodeActions() {
+        guard let position = cursorPositions.first else { return }
+        codeActionModel.showActions(at: position)
+    }
+
     /// Fills out all properties on the given cursor position if it's missing either the range or line/column
     /// information.
     public func resolveCursorPosition(_ position: CursorPosition) -> CursorPosition? {
