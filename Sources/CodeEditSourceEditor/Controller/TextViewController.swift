@@ -137,6 +137,14 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides document symbols for "Go to Symbol". See ``SymbolsDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var symbolsDelegate: SymbolsDelegate? {
+        didSet {
+            symbolsModel.delegate = symbolsDelegate
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -245,6 +253,8 @@ public class TextViewController: NSViewController {
 
     var diagnosticsModel: DiagnosticsModel
 
+    var symbolsModel: SymbolsModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -277,7 +287,8 @@ public class TextViewController: NSViewController {
         hoverDelegate: HoverDelegate? = nil,
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
         codeActionDelegate: CodeActionDelegate? = nil,
-        diagnosticsDelegate: DiagnosticsDelegate? = nil
+        diagnosticsDelegate: DiagnosticsDelegate? = nil,
+        symbolsDelegate: SymbolsDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -311,6 +322,10 @@ public class TextViewController: NSViewController {
             controller: nil,
             delegate: diagnosticsDelegate
         )
+        self.symbolsModel = SymbolsModel(
+            controller: nil,
+            delegate: symbolsDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
@@ -319,6 +334,7 @@ public class TextViewController: NSViewController {
         signatureHelpModel.controller = self
         codeActionModel.controller = self
         diagnosticsModel.controller = self
+        symbolsModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),

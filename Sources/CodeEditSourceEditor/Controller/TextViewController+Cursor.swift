@@ -94,6 +94,12 @@ extension TextViewController {
         codeActionModel.showActions(at: position)
     }
 
+    /// Presents the document's symbols for quick navigation ("Go to Symbol").
+    public func showDocumentSymbols() {
+        guard let position = cursorPositions.first else { return }
+        symbolsModel.show(at: position)
+    }
+
     /// Fills out all properties on the given cursor position if it's missing either the range or line/column
     /// information.
     public func resolveCursorPosition(_ position: CursorPosition) -> CursorPosition? {

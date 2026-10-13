@@ -41,7 +41,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         hoverDelegate: HoverDelegate? = nil,
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
         codeActionDelegate: CodeActionDelegate? = nil,
-        diagnosticsDelegate: DiagnosticsDelegate? = nil
+        diagnosticsDelegate: DiagnosticsDelegate? = nil,
+        symbolsDelegate: SymbolsDelegate? = nil
     ) {
         self.text = .binding(text)
         self.language = language
@@ -56,6 +57,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.signatureHelpDelegate = signatureHelpDelegate
         self.codeActionDelegate = codeActionDelegate
         self.diagnosticsDelegate = diagnosticsDelegate
+        self.symbolsDelegate = symbolsDelegate
     }
 
     /// Initializes a new source editor
@@ -82,7 +84,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         hoverDelegate: HoverDelegate? = nil,
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
         codeActionDelegate: CodeActionDelegate? = nil,
-        diagnosticsDelegate: DiagnosticsDelegate? = nil
+        diagnosticsDelegate: DiagnosticsDelegate? = nil,
+        symbolsDelegate: SymbolsDelegate? = nil
     ) {
         self.text = .storage(text)
         self.language = language
@@ -97,6 +100,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.signatureHelpDelegate = signatureHelpDelegate
         self.codeActionDelegate = codeActionDelegate
         self.diagnosticsDelegate = diagnosticsDelegate
+        self.symbolsDelegate = symbolsDelegate
     }
 
     var text: TextAPI
@@ -112,6 +116,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var signatureHelpDelegate: SignatureHelpDelegate?
     weak var codeActionDelegate: CodeActionDelegate?
     weak var diagnosticsDelegate: DiagnosticsDelegate?
+    weak var symbolsDelegate: SymbolsDelegate?
 
     public typealias NSViewControllerType = TextViewController
 
@@ -129,7 +134,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
             hoverDelegate: hoverDelegate,
             signatureHelpDelegate: signatureHelpDelegate,
             codeActionDelegate: codeActionDelegate,
-            diagnosticsDelegate: diagnosticsDelegate
+            diagnosticsDelegate: diagnosticsDelegate,
+            symbolsDelegate: symbolsDelegate
         )
         switch text {
         case .binding(let binding):
@@ -159,6 +165,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.signatureHelpDelegate = signatureHelpDelegate
         controller.codeActionDelegate = codeActionDelegate
         controller.diagnosticsDelegate = diagnosticsDelegate
+        controller.symbolsDelegate = symbolsDelegate
 
         context.coordinator.updateHighlightProviders(highlightProviders)
 

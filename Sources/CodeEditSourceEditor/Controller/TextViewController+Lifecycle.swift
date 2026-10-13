@@ -254,6 +254,13 @@ extension TextViewController {
         let commandKey = NSEvent.ModifierFlags.command
         let controlKey = NSEvent.ModifierFlags.control
 
+        // ⌘⇧O — Go to Symbol (document outline).
+        if modifierFlags.contains([.command, .shift]),
+           event.charactersIgnoringModifiers?.lowercased() == "o" {
+            showDocumentSymbols()
+            return nil
+        }
+
         switch (modifierFlags, event.charactersIgnoringModifiers) {
         case (commandKey, "/"):
             handleCommandSlash()
