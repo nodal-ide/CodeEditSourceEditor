@@ -7,7 +7,6 @@
 
 import AppKit
 import CodeEditTextView
-import os
 
 /// Manages two things:
 /// - Finding a range to hover when pressing `cmd` using tree-sitter.
@@ -17,11 +16,6 @@ import os
 @MainActor
 final class JumpToDefinitionModel {
     static let emphasisId = "jumpToDefinition"
-
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "CodeEdit",
-        category: "JumpToDefinition"
-    )
 
     weak var delegate: JumpToDefinitionDelegate?
     weak var treeSitterClient: TreeSitterClient?
@@ -58,16 +52,14 @@ final class JumpToDefinitionModel {
             "name", "variable_name", "qualified_name", "relative_name"
         ]
         guard let nodes = treeSitterClient?.syncNodes(at: location) else {
-            Self.logger.notice("jump: no tree-sitter nodes at offset=\(location, privacy: .public) (falling back to text)")
             return textFallbackRange(at: location)
         }
         let nodeTypes = nodes.map { $0.node.nodeType ?? "?" }
-        Self.logger.notice("jump: nodes at \(location, privacy: .public): \(nodeTypes, privacy: .public)")
+        _ = nodeTypes
         guard let node = nodes.first(where: { result in
             guard let type = result.node.nodeType else { return false }
             return type.contains("identifier") || identifierNodeTypes.contains(type)
         }) else {
-            Self.logger.notice("jump: no identifier-like node at offset=\(location, privacy: .public) (falling back to text)")
             return textFallbackRange(at: location)
         }
         guard !Task.isCancelled else { return nil }
@@ -77,11 +69,9 @@ final class JumpToDefinitionModel {
     /// Text-based identifier range, used when tree-sitter yields no node.
     private func textFallbackRange(at location: Int) -> NSRange? {
         guard let range = controller?.textIdentifierRange(at: location) else {
-            Self.logger.notice("jump: text fallback found no identifier at offset=\(location, privacy: .public)")
             cancelHover()
             return nil
         }
-        Self.logger.notice("jump: text fallback range=\(NSStringFromRange(range), privacy: .public)")
         return range
     }
 
@@ -93,18 +83,15 @@ final class JumpToDefinitionModel {
         jumpRequestTask?.cancel()
         jumpRequestTask = Task {
             currentLinks = nil
-            Self.logger.notice("jump: performJump range=\(NSStringFromRange(location), privacy: .public)")
             guard let controller,
                   let links = await delegate?.queryLinks(forRange: location, textView: controller),
                   !links.isEmpty else {
-                Self.logger.notice("jump: no links returned for range=\(NSStringFromRange(location), privacy: .public)")
                 NSSound.beep()
                 if let textView {
                     BezelNotification.show(symbolName: "questionmark", over: textView)
                 }
                 return
             }
-            Self.logger.notice("jump: \(links.count, privacy: .public) link(s): \(links.map(\.label), privacy: .public)")
             if links.count == 1 {
                 let link = links[0]
                 if link.url != nil {
@@ -184,7 +171,6 @@ final class JumpToDefinitionModel {
     }
 
     private func updateHoveredRange(to newRange: NSRange) {
-        Self.logger.notice("jump: cmd+hover range=\(NSStringFromRange(newRange), privacy: .public)")
         let rects = textView?.layoutManager.rectsFor(range: newRange).map { ($0, NSCursor.pointingHand) } ?? []
         (textView as? SourceEditorTextView)?.additionalCursorRects = rects
         textView?.resetCursorRects()
