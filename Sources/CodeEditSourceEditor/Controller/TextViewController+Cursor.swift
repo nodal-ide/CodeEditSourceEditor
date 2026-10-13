@@ -84,6 +84,7 @@ extension TextViewController {
 
         if let position = cursorPositions.first {
             suggestionTriggerModel.selectionUpdated(position)
+            signatureHelpModel.selectionUpdated(position)
         }
     }
 

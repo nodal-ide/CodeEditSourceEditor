@@ -112,6 +112,14 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides signature help while typing a call. See ``SignatureHelpDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var signatureHelpDelegate: SignatureHelpDelegate? {
+        didSet {
+            signatureHelpModel.delegate = signatureHelpDelegate
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -214,6 +222,8 @@ public class TextViewController: NSViewController {
 
     var hoverModel: HoverModel
 
+    var signatureHelpModel: SignatureHelpModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -243,7 +253,8 @@ public class TextViewController: NSViewController {
         coordinators: [TextViewCoordinator] = [],
         completionDelegate: CodeSuggestionDelegate? = nil,
         jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil,
-        hoverDelegate: HoverDelegate? = nil
+        hoverDelegate: HoverDelegate? = nil,
+        signatureHelpDelegate: SignatureHelpDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -254,6 +265,7 @@ public class TextViewController: NSViewController {
         self.invisibleCharactersCoordinator = InvisibleCharactersCoordinator(configuration: configuration)
         self.completionDelegate = completionDelegate
         self.hoverDelegate = hoverDelegate
+        self.signatureHelpDelegate = signatureHelpDelegate
         self.jumpToDefinitionModel = JumpToDefinitionModel(
             controller: nil,
             treeSitterClient: treeSitterClient,
@@ -264,11 +276,16 @@ public class TextViewController: NSViewController {
             treeSitterClient: treeSitterClient,
             delegate: hoverDelegate
         )
+        self.signatureHelpModel = SignatureHelpModel(
+            controller: nil,
+            delegate: signatureHelpDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
         jumpToDefinitionModel.controller = self
         hoverModel.controller = self
+        signatureHelpModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),
