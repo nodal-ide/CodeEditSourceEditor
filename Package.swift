@@ -16,18 +16,18 @@ let package = Package(
     dependencies: [
         // A fast, efficient, text view for code.
         .package(
-            url: "https://github.com/CodeEditApp/CodeEditTextView.git",
-            from: "0.12.1"
+            url: "https://github.com/upperdo/CodeEditTextView.git",
+            branch: "main"
         ),
         // tree-sitter languages
         .package(
-            url: "https://github.com/CodeEditApp/CodeEditLanguages.git",
-            exact: "0.1.20"
+            url: "https://github.com/upperdo/CodeEditLanguages.git",
+            branch: "main"
         ),
         // CodeEditSymbols
         .package(
-            url: "https://github.com/CodeEditApp/CodeEditSymbols.git",
-            exact: "0.2.3"
+            url: "https://github.com/upperdo/CodeEditSymbols.git",
+            branch: "main"
         ),
         // SwiftLint
         .package(
