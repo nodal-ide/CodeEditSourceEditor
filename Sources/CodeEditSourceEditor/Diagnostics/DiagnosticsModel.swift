@@ -40,10 +40,18 @@ final class DiagnosticsModel {
     }
 
     private func apply(_ diagnostics: [EditorDiagnostic]) {
-        guard let manager = controller?.textView?.emphasisManager else { return }
-        let emphases = diagnostics.map { diagnostic in
-            Emphasis(
-                range: diagnostic.range,
+        guard let textView = controller?.textView, let manager = textView.emphasisManager else { return }
+        let length = textView.textStorage?.length ?? 0
+
+        // Drop any diagnostic whose range no longer fits the current text (the parse may be
+        // from a slightly older snapshot than the live buffer).
+        let emphases = diagnostics.compactMap { diagnostic -> Emphasis? in
+            let range = diagnostic.range
+            guard range.location >= 0, range.length >= 0, range.location + range.length <= length else {
+                return nil
+            }
+            return Emphasis(
+                range: range,
                 style: .underline(color: Self.color(for: diagnostic.severity)),
                 inactive: true
             )
