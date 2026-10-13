@@ -43,9 +43,15 @@ final class DiagnosticsModel {
         guard let textView = controller?.textView, let manager = textView.emphasisManager else { return }
         let length = textView.textStorage?.length ?? 0
 
+        // Cap the number of rendered underlines so a pathological file can't create thousands
+        // of layers.
+        let limited = diagnostics.count > Self.maxRendered
+            ? Array(diagnostics.prefix(Self.maxRendered))
+            : diagnostics
+
         // Drop any diagnostic whose range no longer fits the current text (the parse may be
         // from a slightly older snapshot than the live buffer).
-        let emphases = diagnostics.compactMap { diagnostic -> Emphasis? in
+        let emphases = limited.compactMap { diagnostic -> Emphasis? in
             let range = diagnostic.range
             guard range.location >= 0, range.length >= 0, range.location + range.length <= length else {
                 return nil
@@ -59,6 +65,8 @@ final class DiagnosticsModel {
         manager.replaceEmphases(emphases, for: Self.emphasisID)
         manager.updateLayerBackgrounds()
     }
+
+    private static let maxRendered = 300
 
     private static func color(for severity: EditorDiagnosticSeverity) -> NSColor {
         switch severity {
