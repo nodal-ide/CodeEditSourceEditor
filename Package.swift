@@ -16,23 +16,15 @@ let package = Package(
     dependencies: [
         // A fast, efficient, text view for code.
         .package(
-            url: "https://github.com/upperdo/CodeEditTextView.git",
-            branch: "main"
+            path: "../CodeEditTextView"
         ),
         // tree-sitter languages
         .package(
-            url: "https://github.com/upperdo/CodeEditLanguages.git",
-            branch: "main"
+            path: "../CodeEditLanguages"
         ),
         // CodeEditSymbols
         .package(
-            url: "https://github.com/upperdo/CodeEditSymbols.git",
-            branch: "main"
-        ),
-        // SwiftLint
-        .package(
-            url: "https://github.com/lukepistrol/SwiftLintPlugin",
-            from: "0.2.2"
+            path: "../CodeEditSymbols"
         ),
         // Rules for indentation, pair completion, whitespace
         .package(
@@ -50,9 +42,6 @@ let package = Package(
                 "CodeEditLanguages",
                 "TextFormation",
                 "CodeEditSymbols"
-            ],
-            plugins: [
-                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
             ]
         ),
 
@@ -63,9 +52,6 @@ let package = Package(
                 "CodeEditSourceEditor",
                 "CodeEditLanguages",
                 .product(name: "CustomDump", package: "swift-custom-dump")
-            ],
-            plugins: [
-                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
             ]
         ),
     ]
