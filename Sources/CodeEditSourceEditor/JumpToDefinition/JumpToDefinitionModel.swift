@@ -45,8 +45,17 @@ final class JumpToDefinitionModel {
     /// - Parameter location: The current cursor location.
     /// - Returns: A range that contains a potential identifier to look up.
     private func findDefinitionRange(at location: Int) async -> NSRange? {
+        // Node types that represent an identifier-like token. The original check only accepted
+        // nodes containing "identifier", which misses languages like PHP that use `name`,
+        // `variable_name`, `qualified_name`, and `relative_name`.
+        let identifierNodeTypes: Set<String> = [
+            "name", "variable_name", "qualified_name", "relative_name"
+        ]
         guard let nodes = try? await treeSitterClient?.nodesAt(location: location),
-              let node = nodes.first(where: { $0.node.nodeType?.contains("identifier") == true }) else {
+              let node = nodes.first(where: { result in
+                  guard let type = result.node.nodeType else { return false }
+                  return type.contains("identifier") || identifierNodeTypes.contains(type)
+              }) else {
             cancelHover()
             return nil
         }
