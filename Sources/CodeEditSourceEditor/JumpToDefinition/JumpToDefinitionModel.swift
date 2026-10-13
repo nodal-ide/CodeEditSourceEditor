@@ -57,10 +57,9 @@ final class JumpToDefinitionModel {
         let identifierNodeTypes: Set<String> = [
             "name", "variable_name", "qualified_name", "relative_name"
         ]
-        guard let nodes = try? await treeSitterClient?.nodesAt(location: location) else {
-            Self.logger.notice("jump: no tree-sitter nodes at offset=\(location, privacy: .public)")
-            cancelHover()
-            return nil
+        guard let nodes = treeSitterClient?.syncNodes(at: location) else {
+            Self.logger.notice("jump: no tree-sitter nodes at offset=\(location, privacy: .public) (falling back to text)")
+            return textFallbackRange(at: location)
         }
         let nodeTypes = nodes.map { $0.node.nodeType ?? "?" }
         Self.logger.notice("jump: nodes at \(location, privacy: .public): \(nodeTypes, privacy: .public)")
@@ -68,12 +67,22 @@ final class JumpToDefinitionModel {
             guard let type = result.node.nodeType else { return false }
             return type.contains("identifier") || identifierNodeTypes.contains(type)
         }) else {
-            Self.logger.notice("jump: no identifier-like node at offset=\(location, privacy: .public)")
-            cancelHover()
-            return nil
+            Self.logger.notice("jump: no identifier-like node at offset=\(location, privacy: .public) (falling back to text)")
+            return textFallbackRange(at: location)
         }
         guard !Task.isCancelled else { return nil }
         return node.node.range
+    }
+
+    /// Text-based identifier range, used when tree-sitter yields no node.
+    private func textFallbackRange(at location: Int) -> NSRange? {
+        guard let range = controller?.textIdentifierRange(at: location) else {
+            Self.logger.notice("jump: text fallback found no identifier at offset=\(location, privacy: .public)")
+            cancelHover()
+            return nil
+        }
+        Self.logger.notice("jump: text fallback range=\(NSStringFromRange(range), privacy: .public)")
+        return range
     }
 
     // MARK: - Jump Action

@@ -95,9 +95,9 @@ final class HoverModel {
 
     private func identifierRange(at location: Int) async -> NSRange? {
         let identifierNodeTypes: Set<String> = ["name", "variable_name", "qualified_name", "relative_name"]
-        guard let nodes = try? await treeSitterClient?.nodesAt(location: location) else {
-            Self.logger.notice("hover: treeSitterClient returned no nodes (client nil or error)")
-            return nil
+        guard let nodes = treeSitterClient?.syncNodes(at: location) else {
+            Self.logger.notice("hover: no tree-sitter nodes at offset=\(location, privacy: .public) (falling back to text)")
+            return textFallbackRange(at: location)
         }
         let nodeTypes = nodes.map { $0.node.nodeType ?? "?" }
         Self.logger.notice("hover: nodes at \(location, privacy: .public): \(nodeTypes, privacy: .public)")
@@ -105,9 +105,16 @@ final class HoverModel {
             guard let type = result.node.nodeType else { return false }
             return type.contains("identifier") || identifierNodeTypes.contains(type)
         }) else {
-            return nil
+            Self.logger.notice("hover: no identifier-like node at offset=\(location, privacy: .public) (falling back to text)")
+            return textFallbackRange(at: location)
         }
         return node.node.range
+    }
+
+    private func textFallbackRange(at location: Int) -> NSRange? {
+        guard let range = controller?.textIdentifierRange(at: location) else { return nil }
+        Self.logger.notice("hover: text fallback range=\(NSStringFromRange(range), privacy: .public)")
+        return range
     }
 
     func cancel() {

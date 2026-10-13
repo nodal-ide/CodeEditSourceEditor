@@ -19,6 +19,14 @@ extension TreeSitterClient {
         public let node: Node
     }
 
+    /// Synchronous node lookup.
+    ///
+    /// Disambiguates from the `async` overload so callers on the main thread (hover,
+    /// cmd+click hit-testing) can use the synchronous executor path.
+    public func syncNodes(at location: Int) -> [NodeResult]? {
+        try? nodesAt(location: location)
+    }
+
     public struct QueryResult {
         let id: TreeSitterLanguage
         let cursor: ResolvingQueryMatchSequence<QueryCursor>
