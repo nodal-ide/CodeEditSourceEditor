@@ -30,6 +30,7 @@ extension TextViewController: TextViewDelegate {
 
         suggestionTriggerModel.textView(textView, didReplaceContentsIn: range, with: string)
         signatureHelpModel.textDidChange()
+        diagnosticsModel.refresh()
     }
 
     public func textView(_ textView: TextView, shouldReplaceContentsIn range: NSRange, with string: String) -> Bool {

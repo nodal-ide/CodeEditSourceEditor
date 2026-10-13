@@ -128,6 +128,15 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides native diagnostics (rendered as underlines). See ``DiagnosticsDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var diagnosticsDelegate: DiagnosticsDelegate? {
+        didSet {
+            diagnosticsModel.delegate = diagnosticsDelegate
+            diagnosticsModel.refresh()
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -234,6 +243,8 @@ public class TextViewController: NSViewController {
 
     var codeActionModel: CodeActionModel
 
+    var diagnosticsModel: DiagnosticsModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -265,7 +276,8 @@ public class TextViewController: NSViewController {
         jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil,
         hoverDelegate: HoverDelegate? = nil,
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
-        codeActionDelegate: CodeActionDelegate? = nil
+        codeActionDelegate: CodeActionDelegate? = nil,
+        diagnosticsDelegate: DiagnosticsDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -295,6 +307,10 @@ public class TextViewController: NSViewController {
             controller: nil,
             delegate: codeActionDelegate
         )
+        self.diagnosticsModel = DiagnosticsModel(
+            controller: nil,
+            delegate: diagnosticsDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
@@ -302,6 +318,7 @@ public class TextViewController: NSViewController {
         hoverModel.controller = self
         signatureHelpModel.controller = self
         codeActionModel.controller = self
+        diagnosticsModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),

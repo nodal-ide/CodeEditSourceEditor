@@ -40,7 +40,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil,
         hoverDelegate: HoverDelegate? = nil,
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
-        codeActionDelegate: CodeActionDelegate? = nil
+        codeActionDelegate: CodeActionDelegate? = nil,
+        diagnosticsDelegate: DiagnosticsDelegate? = nil
     ) {
         self.text = .binding(text)
         self.language = language
@@ -54,6 +55,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.hoverDelegate = hoverDelegate
         self.signatureHelpDelegate = signatureHelpDelegate
         self.codeActionDelegate = codeActionDelegate
+        self.diagnosticsDelegate = diagnosticsDelegate
     }
 
     /// Initializes a new source editor
@@ -79,7 +81,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil,
         hoverDelegate: HoverDelegate? = nil,
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
-        codeActionDelegate: CodeActionDelegate? = nil
+        codeActionDelegate: CodeActionDelegate? = nil,
+        diagnosticsDelegate: DiagnosticsDelegate? = nil
     ) {
         self.text = .storage(text)
         self.language = language
@@ -93,6 +96,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.hoverDelegate = hoverDelegate
         self.signatureHelpDelegate = signatureHelpDelegate
         self.codeActionDelegate = codeActionDelegate
+        self.diagnosticsDelegate = diagnosticsDelegate
     }
 
     var text: TextAPI
@@ -107,6 +111,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var hoverDelegate: HoverDelegate?
     weak var signatureHelpDelegate: SignatureHelpDelegate?
     weak var codeActionDelegate: CodeActionDelegate?
+    weak var diagnosticsDelegate: DiagnosticsDelegate?
 
     public typealias NSViewControllerType = TextViewController
 
@@ -123,7 +128,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
             jumpToDefinitionDelegate: jumpToDefinitionDelegate,
             hoverDelegate: hoverDelegate,
             signatureHelpDelegate: signatureHelpDelegate,
-            codeActionDelegate: codeActionDelegate
+            codeActionDelegate: codeActionDelegate,
+            diagnosticsDelegate: diagnosticsDelegate
         )
         switch text {
         case .binding(let binding):
@@ -152,6 +158,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.hoverDelegate = hoverDelegate
         controller.signatureHelpDelegate = signatureHelpDelegate
         controller.codeActionDelegate = codeActionDelegate
+        controller.diagnosticsDelegate = diagnosticsDelegate
 
         context.coordinator.updateHighlightProviders(highlightProviders)
 
