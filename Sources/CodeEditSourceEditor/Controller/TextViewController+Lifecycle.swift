@@ -119,6 +119,7 @@ extension TextViewController {
             guard let clipView = notification.object as? NSClipView else { return }
             self?.gutterView.needsDisplay = true
             self?.minimapXConstraint?.constant = clipView.bounds.origin.x
+            self?.hoverModel.cancel()
             NotificationCenter.default.post(name: Self.scrollPositionDidUpdateNotification, object: self)
         }
     }
@@ -210,6 +211,8 @@ extension TextViewController {
         case .keyDown:
             let tabKey: UInt16 = 0x30
 
+            hoverModel.cancel()
+
             if event.keyCode == tabKey {
                 return self.handleTab(event: event, modifierFlags: modifierFlags.rawValue)
             } else {
@@ -218,6 +221,7 @@ extension TextViewController {
         case .flagsChanged:
             if modifierFlags.contains(.command),
                let coords = view.window?.convertPoint(fromScreen: NSEvent.mouseLocation) {
+                hoverModel.cancel()
                 self.jumpToDefinitionModel.mouseHovered(windowCoordinates: coords)
             }
 
@@ -226,13 +230,16 @@ extension TextViewController {
             }
             return event
         case .mouseMoved:
-            guard modifierFlags.contains(.command) else {
+            if modifierFlags.contains(.command) {
+                hoverModel.cancel()
+                self.jumpToDefinitionModel.mouseHovered(windowCoordinates: event.locationInWindow)
+            } else {
                 self.jumpToDefinitionModel.cancelHover()
-                return event
+                hoverModel.mouseMoved(windowCoordinates: event.locationInWindow)
             }
-            self.jumpToDefinitionModel.mouseHovered(windowCoordinates: event.locationInWindow)
             return event
         case .leftMouseUp:
+            hoverModel.cancel()
             if let range = jumpToDefinitionModel.hoveredRange {
                 self.jumpToDefinitionModel.performJump(at: range)
                 return nil

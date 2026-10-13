@@ -103,6 +103,15 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides hover tooltips for identifiers. See ``HoverDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object. To function properly, ensure a
+    ///         strong reference to the delegate is kept *outside* of this variable.
+    public weak var hoverDelegate: HoverDelegate? {
+        didSet {
+            hoverModel.delegate = hoverDelegate
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -192,6 +201,7 @@ public class TextViewController: NSViewController {
     internal(set) public var treeSitterClient: TreeSitterClient? {
         didSet {
             jumpToDefinitionModel.treeSitterClient = treeSitterClient
+            hoverModel.treeSitterClient = treeSitterClient
         }
     }
 
@@ -201,6 +211,8 @@ public class TextViewController: NSViewController {
     var textFilters: [TextFormation.Filter] = []
 
     var jumpToDefinitionModel: JumpToDefinitionModel
+
+    var hoverModel: HoverModel
 
     var cancellables = Set<AnyCancellable>()
 
@@ -230,7 +242,8 @@ public class TextViewController: NSViewController {
         undoManager: CEUndoManager? = nil,
         coordinators: [TextViewCoordinator] = [],
         completionDelegate: CodeSuggestionDelegate? = nil,
-        jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil
+        jumpToDefinitionDelegate: JumpToDefinitionDelegate? = nil,
+        hoverDelegate: HoverDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -240,15 +253,22 @@ public class TextViewController: NSViewController {
         self._undoManager = undoManager
         self.invisibleCharactersCoordinator = InvisibleCharactersCoordinator(configuration: configuration)
         self.completionDelegate = completionDelegate
+        self.hoverDelegate = hoverDelegate
         self.jumpToDefinitionModel = JumpToDefinitionModel(
             controller: nil,
             treeSitterClient: treeSitterClient,
             delegate: jumpToDefinitionDelegate
         )
+        self.hoverModel = HoverModel(
+            controller: nil,
+            treeSitterClient: treeSitterClient,
+            delegate: hoverDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
         jumpToDefinitionModel.controller = self
+        hoverModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),
