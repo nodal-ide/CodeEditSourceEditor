@@ -18,11 +18,14 @@ public struct EditorDiagnostic: Sendable {
     public let range: NSRange
     public let severity: EditorDiagnosticSeverity
     public let message: String
+    /// 1-based line number for display, when known.
+    public let line: Int?
 
-    public init(range: NSRange, severity: EditorDiagnosticSeverity, message: String) {
+    public init(range: NSRange, severity: EditorDiagnosticSeverity, message: String, line: Int? = nil) {
         self.range = range
         self.severity = severity
         self.message = message
+        self.line = line
     }
 }
 
