@@ -8,6 +8,12 @@
 import CodeEditTextView
 import AppKit
 
+public extension Notification.Name {
+    /// Posted when the user presses Ctrl+Tab / Ctrl+Shift+Tab in the editor so the host app can
+    /// cycle editor tabs. `userInfo["backwards"]` is `true` for Ctrl+Shift+Tab.
+    static let codeEditCycleTab = Notification.Name("codeedit.cycleTab")
+}
+
 extension TextViewController {
     override public func viewWillAppear() {
         super.viewWillAppear()
@@ -214,6 +220,15 @@ extension TextViewController {
             hoverModel.cancel()
 
             if event.keyCode == tabKey {
+                // Ctrl+Tab / Ctrl+Shift+Tab: let the host app cycle editor tabs.
+                if modifierFlags.contains(.control) {
+                    NotificationCenter.default.post(
+                        name: .codeEditCycleTab,
+                        object: self,
+                        userInfo: ["backwards": modifierFlags.contains(.shift)]
+                    )
+                    return nil
+                }
                 return self.handleTab(event: event, modifierFlags: modifierFlags.rawValue)
             } else {
                 return self.handleCommand(event: event, modifierFlags: modifierFlags)
