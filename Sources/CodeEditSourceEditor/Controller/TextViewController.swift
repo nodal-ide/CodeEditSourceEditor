@@ -133,7 +133,11 @@ public class TextViewController: NSViewController {
     public weak var diagnosticsDelegate: DiagnosticsDelegate? {
         didSet {
             diagnosticsModel.delegate = diagnosticsDelegate
-            diagnosticsModel.refresh()
+            // Avoid a full recompute when the same delegate is re-assigned (the SwiftUI
+            // representable sets delegates on every update).
+            if oldValue !== diagnosticsDelegate {
+                diagnosticsModel.refresh()
+            }
         }
     }
 
