@@ -119,11 +119,18 @@ public final class TreeSitterClient: HighlightProviding {
         self.readBlock = readBlock
         self.readCallback = readCallback
 
+        // The initial parse touches the whole document, so give it a one-time snapshot of the text. This keeps the
+        // background parser from doing a synchronous main-thread round-trip for every chunk (and every injection
+        // lookup), which is what causes the "lag while the language initializes" on file open. Later edits keep using
+        // the live `readBlock`/`readCallback` set above so incremental parsing still observes edits.
+        let snapshotReadBlock = textView.createSnapshotReadBlock()
+        let snapshotReadCallback = textView.createSnapshotReadCallback()
+
         let operation = { [weak self] in
             let state = TreeSitterState(
                 codeLanguage: codeLanguage,
-                readCallback: readCallback,
-                readBlock: readBlock
+                readCallback: snapshotReadCallback,
+                readBlock: snapshotReadBlock
             )
             self?.state = state
         }

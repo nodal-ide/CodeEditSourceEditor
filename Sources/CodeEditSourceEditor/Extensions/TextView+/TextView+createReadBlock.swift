@@ -48,4 +48,54 @@ extension TextView {
             return DispatchQueue.waitMainIfNot(workItem)
         }
     }
+
+    /// Creates a read block that snapshots the document **once** and then serves every chunk from that immutable
+    /// snapshot.
+    ///
+    /// The default ``createReadBlock()`` hops to the main queue (`main.sync`) for *every* chunk it returns and for
+    /// every injection text lookup. During the initial parse of a document that's hundreds of synchronous main-thread
+    /// round-trips, which is what makes a freshly opened file feel like it lags while the language initializes.
+    ///
+    /// This variant performs a single main-thread rendezvous — lazily, on the first read — copies the document, and
+    /// then serves all subsequent reads from the in-memory snapshot with no further main-thread hops.
+    ///
+    /// Use this for the initial parse, where the document is stable. Incremental parses must keep using
+    /// ``createReadBlock()`` so they observe live edits.
+    ///
+    /// - Returns: A block that reads from a single, immutable snapshot of the document.
+    func createSnapshotReadBlock() -> Parser.ReadBlock {
+        var snapshot: Data?
+        // The snapshot is UTF-16, so each character is two bytes.
+        let chunkBytes = TreeSitterClient.Constants.charsToReadInBlock * 2
+
+        return { [weak self] byteOffset, _ in
+            if snapshot == nil {
+                snapshot = DispatchQueue.waitMainIfNot { [weak self] in
+                    guard let string = self?.textStorage.string else { return Data() }
+                    return string.data(using: String.nativeUTF16Encoding) ?? Data()
+                }
+            }
+            guard let snapshot, byteOffset >= 0, byteOffset < snapshot.count else { return nil }
+            let end = min(byteOffset + chunkBytes, snapshot.count)
+            return snapshot.subdata(in: byteOffset..<end)
+        }
+    }
+
+    /// Snapshot variant of ``createReadCallback()``, used alongside ``createSnapshotReadBlock()`` for the initial
+    /// parse so predicate/injection text lookups don't hop to the main thread for every match.
+    ///
+    /// - Returns: A text provider that reads from a single, immutable snapshot of the document.
+    func createSnapshotReadCallback() -> SwiftTreeSitter.Predicate.TextProvider {
+        var snapshot: NSString?
+
+        return { [weak self] range, _ in
+            if snapshot == nil {
+                snapshot = DispatchQueue.waitMainIfNot { [weak self] in
+                    (self?.textStorage.string ?? "") as NSString
+                }
+            }
+            guard let snapshot, range.location >= 0, NSMaxRange(range) <= snapshot.length else { return nil }
+            return snapshot.substring(with: range)
+        }
+    }
 }

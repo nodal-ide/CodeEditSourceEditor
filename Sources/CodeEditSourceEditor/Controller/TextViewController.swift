@@ -66,7 +66,11 @@ public class TextViewController: NSViewController {
     /// The associated `CodeLanguage`
     public var language: CodeLanguage {
         didSet {
-            highlighter?.setLanguage(language: language)
+            // Setting the same language re-parses the whole document and flashes (attributes are cleared then
+            // re-applied). Only react to genuine language changes.
+            if language.id != oldValue.id {
+                highlighter?.setLanguage(language: language)
+            }
             setUpTextFormation()
         }
     }
