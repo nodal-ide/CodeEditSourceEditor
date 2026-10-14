@@ -127,8 +127,12 @@ class SuggestionViewController: NSViewController {
             windowController?.close()
             return nil
 
-        case 125, 126:  // Down/Up Arrow
-            tableView.keyDown(with: event)
+        case 125: // Down Arrow
+            moveSelection(by: 1)
+            return nil
+
+        case 126: // Up Arrow
+            moveSelection(by: -1)
             return nil
 
         case 36, 48:  // Return/Tab
@@ -138,6 +142,21 @@ class SuggestionViewController: NSViewController {
         default:
             return event
         }
+    }
+
+    /// Moves the table selection by `delta`, independent of the window/responder state.
+    private func moveSelection(by delta: Int) {
+        let count = tableView.numberOfRows
+        guard count > 0 else { return }
+        let current = tableView.selectedRow
+        let next: Int
+        if current < 0 {
+            next = delta > 0 ? 0 : count - 1
+        } else {
+            next = min(max(current + delta, 0), count - 1)
+        }
+        tableView.selectRowIndexes(IndexSet(integer: next), byExtendingSelection: false)
+        tableView.scrollRowToVisible(next)
     }
 
     func styleView(using controller: TextViewController) {
@@ -261,6 +280,10 @@ class SuggestionViewController: NSViewController {
             previewView.isHidden = model.items.isEmpty
         }
         tableView.reloadData()
+        // Always have a selection so Enter applies something and ↑/↓ have a starting point.
+        if model?.items.isEmpty == false, tableView.numberOfRows > 0 {
+            tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+        }
         if let activeTextView = model?.activeTextView {
             updateSize(using: activeTextView)
         }

@@ -331,6 +331,7 @@ public class TextViewController: NSViewController {
 
         jumpToDefinitionModel.controller = self
         hoverModel.controller = self
+        hoverModel.diagnosticsModel = diagnosticsModel
         signatureHelpModel.controller = self
         codeActionModel.controller = self
         diagnosticsModel.controller = self

@@ -15,10 +15,20 @@ final class DiagnosticsModel {
     weak var controller: TextViewController?
 
     private var task: Task<Void, Never>?
+    /// The diagnostics currently rendered (validated against the live buffer).
+    private var current: [EditorDiagnostic] = []
 
     init(controller: TextViewController?, delegate: DiagnosticsDelegate?) {
         self.controller = controller
         self.delegate = delegate
+    }
+
+    /// The diagnostic covering `offset`, if any (used for hover tooltips).
+    func diagnostic(at offset: Int) -> EditorDiagnostic? {
+        current.first { diagnostic in
+            offset >= diagnostic.range.location
+                && offset <= diagnostic.range.location + max(diagnostic.range.length, 0)
+        }
     }
 
     /// Recompute diagnostics after a short debounce.
@@ -40,7 +50,10 @@ final class DiagnosticsModel {
     }
 
     private func apply(_ diagnostics: [EditorDiagnostic]) {
-        guard let textView = controller?.textView, let manager = textView.emphasisManager else { return }
+        guard let textView = controller?.textView, let manager = textView.emphasisManager else {
+            current = []
+            return
+        }
         let length = textView.textStorage?.length ?? 0
 
         // Cap the number of rendered underlines so a pathological file can't create thousands
@@ -51,13 +64,15 @@ final class DiagnosticsModel {
 
         // Drop any diagnostic whose range no longer fits the current text (the parse may be
         // from a slightly older snapshot than the live buffer).
-        let emphases = limited.compactMap { diagnostic -> Emphasis? in
+        let valid = limited.filter { diagnostic in
             let range = diagnostic.range
-            guard range.location >= 0, range.length >= 0, range.location + range.length <= length else {
-                return nil
-            }
-            return Emphasis(
-                range: range,
+            return range.location >= 0 && range.length >= 0 && range.location + range.length <= length
+        }
+        current = valid
+
+        let emphases = valid.map { diagnostic in
+            Emphasis(
+                range: diagnostic.range,
                 style: .underline(color: Self.color(for: diagnostic.severity)),
                 inactive: true
             )
