@@ -274,11 +274,18 @@ public class GutterView: NSView {
         var attributes: [NSAttributedString.Key: Any] = [.font: font]
 
         var selectionRangeMap = IndexSet()
-        textView.selectionManager?.textSelections.forEach {
-            if $0.range.isEmpty {
-                selectionRangeMap.insert($0.range.location)
+        let textLength = textView.textStorage.length
+        textView.selectionManager?.textSelections.forEach { selection in
+            let range = selection.range
+            // Guard against invalid/overflowing ranges (e.g. a stale or not-found cursor position
+            // during a tab switch) — inserting them into an IndexSet traps.
+            guard range.location >= 0, range.length >= 0,
+                  range.location <= textLength,
+                  range.location + range.length <= textLength else { return }
+            if range.isEmpty {
+                selectionRangeMap.insert(range.location)
             } else {
-                selectionRangeMap.insert(range: $0.range)
+                selectionRangeMap.insert(range: range)
             }
         }
 
