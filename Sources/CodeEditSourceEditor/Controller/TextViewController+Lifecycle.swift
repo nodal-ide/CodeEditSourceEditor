@@ -269,8 +269,8 @@ extension TextViewController {
         let commandKey = NSEvent.ModifierFlags.command
         let controlKey = NSEvent.ModifierFlags.control
 
-        // ⌘⇧O — Go to Symbol (document outline).
-        if modifierFlags.contains([.command, .shift]),
+        // ⌘⌥O — Go to Symbol (document outline). (⌘⇧O is reserved for the app's Open Quickly.)
+        if modifierFlags.contains([.command, .option]),
            event.charactersIgnoringModifiers?.lowercased() == "o" {
             showDocumentSymbols()
             return nil
