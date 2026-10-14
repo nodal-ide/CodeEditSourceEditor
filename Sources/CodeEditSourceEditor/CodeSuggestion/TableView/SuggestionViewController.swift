@@ -145,7 +145,7 @@ class SuggestionViewController: NSViewController {
     }
 
     /// Moves the table selection by `delta`, independent of the window/responder state.
-    private func moveSelection(by delta: Int) {
+    func moveSelection(by delta: Int) {
         let count = tableView.numberOfRows
         guard count > 0 else { return }
         let current = tableView.selectedRow

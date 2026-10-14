@@ -217,6 +217,12 @@ extension TextViewController {
         case .keyDown:
             let tabKey: UInt16 = 0x30
 
+            // When the completions popup is visible, ↑/↓ navigate its list.
+            if event.keyCode == 125 || event.keyCode == 126, SuggestionController.shared.isVisible {
+                SuggestionController.shared.moveSelection(by: event.keyCode == 125 ? 1 : -1)
+                return nil
+            }
+
             hoverModel.cancel()
 
             if event.keyCode == tabKey {

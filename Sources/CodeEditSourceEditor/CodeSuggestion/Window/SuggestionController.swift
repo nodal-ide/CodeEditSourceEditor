@@ -123,6 +123,13 @@ public final class SuggestionController: NSWindowController {
         window.contentViewController?.viewWillAppear()
     }
 
+    /// Move the completion selection.
+    ///
+    /// Used as a fallback when the editor handles the arrow key before the suggestion window's own key monitor.
+    func moveSelection(by delta: Int) {
+        (contentViewController as? SuggestionViewController)?.moveSelection(by: delta)
+    }
+
     /// Close the window
     public override func close() {
         model.willClose()
