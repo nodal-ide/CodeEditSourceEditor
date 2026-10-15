@@ -59,6 +59,16 @@ actor LineFoldCalculator {
     private func buildFoldsForDocument() async {
         guard let controller = self.controller, let foldProvider = self.foldProvider else { return }
         let documentRange = await controller.textView.documentRange
+
+        // Prefer language-server folding ranges when available; otherwise fall back to the
+        // indentation-based provider.
+        let lspRanges = await controller.foldRangeModel.ranges
+        if !lspRanges.isEmpty {
+            let folds = await Self.rawFolds(from: lspRanges, controller: controller)
+            await yieldNewStorage(newFolds: folds, controller: controller, documentRange: documentRange)
+            return
+        }
+
         var foldCache: [LineFoldStorage.RawFold] = []
         // Depth: Open range
         var openFolds: [Int: LineFoldStorage.RawFold] = [:]
@@ -106,6 +116,52 @@ actor LineFoldCalculator {
         }
 
         await yieldNewStorage(newFolds: foldCache, controller: controller, documentRange: documentRange)
+    }
+
+    /// Converts line-based folding ranges (e.g. from LSP) into character-based raw folds with nesting depths.
+    ///
+    /// A fold starts at the end of the first line's content (before its line ending) so the collapsed
+    /// placeholder appears at the end of that line, and ends at the start of the line after the last line.
+    /// - Parameters:
+    ///   - ranges: The line-based folding ranges (0-based, inclusive).
+    ///   - controller: The text controller to use for line and text access.
+    /// - Returns: Raw folds sorted by position, with `depth` counting nesting.
+    @MainActor
+    static func rawFolds(
+        from ranges: [EditorFoldRange],
+        controller: TextViewController
+    ) -> [LineFoldStorage.RawFold] {
+        guard let layoutManager = controller.textView.layoutManager else { return [] }
+        let text = controller.textView.textStorage.string as NSString
+        let documentLength = text.length
+
+        let sorted = ranges.sorted {
+            $0.startLine != $1.startLine ? $0.startLine < $1.startLine : $0.endLine > $1.endLine
+        }
+
+        var folds: [LineFoldStorage.RawFold] = []
+        for (index, range) in sorted.enumerated() {
+            guard range.endLine > range.startLine,
+                  let firstLine = layoutManager.textLineForIndex(range.startLine) else {
+                continue
+            }
+
+            let firstLineString = text.substring(with: firstLine.range)
+            let lineEndingLength = LineEnding(line: firstLineString)?.rawValue.count ?? 0
+            let start = max(firstLine.range.location, firstLine.range.max - lineEndingLength)
+
+            let end = layoutManager.textLineForIndex(range.endLine + 1)?.range.location ?? documentLength
+            guard end > start else {
+                continue
+            }
+
+            let depth = sorted[..<index].filter {
+                $0.startLine <= range.startLine && $0.endLine >= range.endLine
+            }.count + 1
+
+            folds.append(LineFoldStorage.RawFold(depth: depth, range: start..<end))
+        }
+        return folds
     }
 
     /// Yield a new storage value on the value stream using a new set of folds.

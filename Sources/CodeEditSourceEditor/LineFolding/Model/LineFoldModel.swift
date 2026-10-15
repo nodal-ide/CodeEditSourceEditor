@@ -28,6 +28,7 @@ class LineFoldModel: NSObject, NSTextStorageDelegate, ObservableObject {
     private var textChangedStream: AsyncStream<Void>
     private var textChangedStreamContinuation: AsyncStream<Void>.Continuation
     private var cacheListenTask: Task<Void, Never>?
+    private var foldRangeObserver: NSObjectProtocol?
 
     weak var controller: TextViewController?
     weak var foldView: NSView?
@@ -50,7 +51,23 @@ class LineFoldModel: NSObject, NSTextStorageDelegate, ObservableObject {
                 foldView?.needsDisplay = true
             }
         }
+        // Rebuild folds when the language server reports new folding ranges.
+        foldRangeObserver = NotificationCenter.default.addObserver(
+            forName: FoldRangeModel.didUpdateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.textChangedStreamContinuation.yield()
+        }
         textChangedStreamContinuation.yield(Void())
+    }
+
+    deinit {
+        if let foldRangeObserver {
+            NotificationCenter.default.removeObserver(foldRangeObserver)
+        }
+        cacheListenTask?.cancel()
+        textChangedStreamContinuation.finish()
     }
 
     func getFolds(in range: Range<Int>) -> [FoldRange] {
