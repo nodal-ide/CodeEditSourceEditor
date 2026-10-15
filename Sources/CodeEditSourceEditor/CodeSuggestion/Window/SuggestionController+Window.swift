@@ -7,6 +7,11 @@
 
 import AppKit
 
+/// A non-activating panel that can become key (so keyboard navigation works).
+final class SuggestionPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
 extension SuggestionController {
     /// Will constrain the window's frame to be within the visible screen
     public func constrainWindowToScreenEdges(cursorRect: NSRect, font: NSFont) {
@@ -83,8 +88,9 @@ extension SuggestionController {
 
     static func makeWindow() -> NSWindow {
         // Must be an `NSPanel`: `.nonactivatingPanel`/`.utilityWindow` are panel-only style masks and are
-        // rejected on a plain `NSWindow`, leaving the completion popup unable to display.
-        let window = NSPanel(
+        // rejected on a plain `NSWindow`, leaving the completion popup unable to display. The subclass
+        // allows the panel to become key so arrow/enter keys navigate the suggestion list.
+        let window = SuggestionPanel(
             contentRect: .zero,
             styleMask: [.resizable, .fullSizeContentView, .nonactivatingPanel, .utilityWindow],
             backing: .buffered,
