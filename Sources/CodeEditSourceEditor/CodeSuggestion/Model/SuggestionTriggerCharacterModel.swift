@@ -21,7 +21,12 @@ final class SuggestionTriggerCharacterModel {
     private var lastPosition: NSRange?
 
     func textView(_ textView: TextView, didReplaceContentsIn range: NSRange, with string: String) {
-        guard let controller, let completionDelegate = controller.completionDelegate else {
+        guard let controller else {
+            print("[suggest] no controller")
+            return
+        }
+        guard let completionDelegate = controller.completionDelegate else {
+            print("[suggest] no completionDelegate")
             return
         }
 
@@ -42,6 +47,7 @@ final class SuggestionTriggerCharacterModel {
             lastPosition = nil
             return
         }
+        print("[suggest] triggering after '\(lastChar)'")
 
         let range = NSRange(location: mutation.postApplyRange.max, length: 0)
         lastPosition = range
