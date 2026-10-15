@@ -169,6 +169,22 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides highlights for occurrences of the symbol under the cursor. See
+    /// ``DocumentHighlightDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var documentHighlightDelegate: DocumentHighlightDelegate? {
+        didSet {
+            documentHighlightModel.delegate = documentHighlightDelegate
+            if oldValue !== documentHighlightDelegate {
+                if documentHighlightDelegate == nil {
+                    documentHighlightModel.clear()
+                } else {
+                    documentHighlightModel.refresh()
+                }
+            }
+        }
+    }
+
     /// A delegate that provides folding ranges (e.g. from a language server). See ``FoldRangeDelegate``.
     /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
     public weak var foldRangeDelegate: FoldRangeDelegate? {
@@ -298,6 +314,8 @@ public class TextViewController: NSViewController {
 
     var foldRangeModel: FoldRangeModel
 
+    var documentHighlightModel: DocumentHighlightModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -333,7 +351,8 @@ public class TextViewController: NSViewController {
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
         symbolsDelegate: SymbolsDelegate? = nil,
         inlayHintDelegate: InlayHintDelegate? = nil,
-        foldRangeDelegate: FoldRangeDelegate? = nil
+        foldRangeDelegate: FoldRangeDelegate? = nil,
+        documentHighlightDelegate: DocumentHighlightDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -379,6 +398,10 @@ public class TextViewController: NSViewController {
             controller: nil,
             delegate: foldRangeDelegate
         )
+        self.documentHighlightModel = DocumentHighlightModel(
+            controller: nil,
+            delegate: documentHighlightDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
@@ -391,6 +414,8 @@ public class TextViewController: NSViewController {
         symbolsModel.controller = self
         inlayHintModel.controller = self
         foldRangeModel.controller = self
+        documentHighlightModel.controller = self
+        documentHighlightModel.start()
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),

@@ -44,7 +44,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
         symbolsDelegate: SymbolsDelegate? = nil,
         inlayHintDelegate: InlayHintDelegate? = nil,
-        foldRangeDelegate: FoldRangeDelegate? = nil
+        foldRangeDelegate: FoldRangeDelegate? = nil,
+        documentHighlightDelegate: DocumentHighlightDelegate? = nil
     ) {
         self.text = .binding(text)
         self.language = language
@@ -62,6 +63,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.symbolsDelegate = symbolsDelegate
         self.inlayHintDelegate = inlayHintDelegate
         self.foldRangeDelegate = foldRangeDelegate
+        self.documentHighlightDelegate = documentHighlightDelegate
     }
 
     /// Initializes a new source editor
@@ -91,7 +93,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
         symbolsDelegate: SymbolsDelegate? = nil,
         inlayHintDelegate: InlayHintDelegate? = nil,
-        foldRangeDelegate: FoldRangeDelegate? = nil
+        foldRangeDelegate: FoldRangeDelegate? = nil,
+        documentHighlightDelegate: DocumentHighlightDelegate? = nil
     ) {
         self.text = .storage(text)
         self.language = language
@@ -109,6 +112,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.symbolsDelegate = symbolsDelegate
         self.inlayHintDelegate = inlayHintDelegate
         self.foldRangeDelegate = foldRangeDelegate
+        self.documentHighlightDelegate = documentHighlightDelegate
     }
 
     var text: TextAPI
@@ -127,6 +131,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var symbolsDelegate: SymbolsDelegate?
     weak var inlayHintDelegate: InlayHintDelegate?
     weak var foldRangeDelegate: FoldRangeDelegate?
+    weak var documentHighlightDelegate: DocumentHighlightDelegate?
 
     public typealias NSViewControllerType = TextViewController
 
@@ -147,7 +152,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
             diagnosticsDelegate: diagnosticsDelegate,
             symbolsDelegate: symbolsDelegate,
             inlayHintDelegate: inlayHintDelegate,
-            foldRangeDelegate: foldRangeDelegate
+            foldRangeDelegate: foldRangeDelegate,
+            documentHighlightDelegate: documentHighlightDelegate
         )
         switch text {
         case .binding(let binding):
@@ -180,6 +186,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.symbolsDelegate = symbolsDelegate
         controller.inlayHintDelegate = inlayHintDelegate
         controller.foldRangeDelegate = foldRangeDelegate
+        controller.documentHighlightDelegate = documentHighlightDelegate
 
         context.coordinator.updateHighlightProviders(highlightProviders)
 
