@@ -119,9 +119,14 @@ public final class SuggestionController: NSWindowController {
         }
 
         super.showWindow(nil)
-        window.orderFront(nil)
+        window.orderFrontRegardless()
         window.contentViewController?.viewWillAppear()
-        print("[suggest] showWindow: isVisible=\(window.isVisible) frame=\(window.frame) parentFrame=\(parentWindow.frame)")
+        let content = window.contentViewController?.view
+        print("[suggest] showWindow: visible=\(window.isVisible) key=\(window.isKeyWindow) "
+              + "level=\(window.level.rawValue) alpha=\(window.alphaValue) "
+              + "onActiveSpace=\(window.isOnActiveSpace) occl=\(window.occlusionState.rawValue) "
+              + "frame=\(window.frame) contentFrame=\(content?.frame ?? .zero) "
+              + "hidden=\(content?.isHidden ?? true) rows=\(model.items.count)")
     }
 
     /// Move the completion selection.

@@ -59,6 +59,15 @@ extension SuggestionController {
         if isWindowAboveCursor && oldFrame.size.height != newSize.height {
             window.setFrameOrigin(oldFrame.origin)
         }
+
+        // Keep the (resized) popup on-screen.
+        if let screenFrame = (window.screen ?? NSScreen.main)?.visibleFrame {
+            var origin = window.frame.origin
+            origin.x = min(max(origin.x, screenFrame.minX + 6), max(screenFrame.minX + 6, screenFrame.maxX - newSize.width - 6))
+            origin.y = min(max(origin.y, screenFrame.minY + 6), max(screenFrame.minY + 6, screenFrame.maxY - newSize.height - 6))
+            window.setFrameOrigin(origin)
+        }
+        print("[suggest] updateWindowSize: size=\(newSize) frame=\(window.frame) visible=\(window.isVisible)")
     }
 
     // MARK: - Private Methods
