@@ -69,8 +69,10 @@ final class SuggestionViewModel: ObservableObject {
                         return
                     }
 
-                    print("[suggest] showCompletions: showing \(completionItems.items.count) items")
+                    print("[suggest] showCompletions: showing \(completionItems.items.count) items "
+                          + "vm=\(ObjectIdentifier(self))")
                     self.items = completionItems.items
+                    print("[suggest] vm set items=\(self.items.count) vm=\(ObjectIdentifier(self))")
                     self.syntaxHighlightedCache = [:]
                     showWindowOnParent(targetParentWindow, cursorRect)
                 }
@@ -123,6 +125,7 @@ final class SuggestionViewModel: ObservableObject {
     }
 
     func willClose() {
+        print("[suggest] willClose vm=\(ObjectIdentifier(self)) (items were \(items.count))")
         // Cancel a pending request so it can't re-show the window after the user dismissed it.
         itemsRequestTask?.cancel()
         itemsRequestTask = nil

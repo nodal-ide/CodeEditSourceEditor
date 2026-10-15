@@ -126,7 +126,7 @@ public final class SuggestionController: NSWindowController {
               + "level=\(window.level.rawValue) alpha=\(window.alphaValue) "
               + "onActiveSpace=\(window.isOnActiveSpace) occl=\(window.occlusionState.rawValue) "
               + "frame=\(window.frame) contentFrame=\(content?.frame ?? .zero) "
-              + "hidden=\(content?.isHidden ?? true) rows=\(model.items.count)")
+              + "hidden=\(content?.isHidden ?? true) model=\(ObjectIdentifier(model)) rows=\(model.items.count)")
     }
 
     /// Move the completion selection.
