@@ -18,9 +18,25 @@ final class DiagnosticsModel {
     /// The diagnostics currently rendered (validated against the live buffer).
     private var current: [EditorDiagnostic] = []
 
+    private var diagnosticsObserver: NSObjectProtocol?
+
     init(controller: TextViewController?, delegate: DiagnosticsDelegate?) {
         self.controller = controller
         self.delegate = delegate
+        // Push-based servers (e.g. typescript-language-server) notify us to refresh.
+        diagnosticsObserver = NotificationCenter.default.addObserver(
+            forName: Notification.Name("LSPDiagnosticsUpdated"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        }
+    }
+
+    deinit {
+        if let diagnosticsObserver {
+            NotificationCenter.default.removeObserver(diagnosticsObserver)
+        }
     }
 
     /// The diagnostic covering `offset`, if any (used for hover tooltips).
