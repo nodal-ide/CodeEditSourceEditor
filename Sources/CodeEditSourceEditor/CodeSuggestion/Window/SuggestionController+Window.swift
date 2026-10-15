@@ -13,56 +13,33 @@ final class SuggestionPanel: NSPanel {
 }
 
 extension SuggestionController {
-    /// Will constrain the window's frame to be within the visible screen
+    /// Positions the suggestion window near the cursor, clamped to the visible screen.
     public func constrainWindowToScreenEdges(cursorRect: NSRect, font: NSFont) {
-        guard let window = self.window,
-              let screenFrame = window.screen?.visibleFrame else {
-            return
-        }
+        guard let window = self.window else { return }
+        guard let screenFrame = (window.screen ?? NSScreen.main)?.visibleFrame else { return }
 
-        let windowSize = window.frame.size
-        let padding: CGFloat = 22
-        var newWindowOrigin = NSPoint(
-            x: cursorRect.origin.x - Self.WINDOW_PADDING
-            - CodeSuggestionLabelView.HORIZONTAL_PADDING - font.pointSize,
-            y: cursorRect.origin.y
-        )
+        let size = window.frame.size
+        let padding: CGFloat = 6
+        let minY = screenFrame.minY + padding
+        let maxY = max(minY, screenFrame.maxY - size.height - padding)
 
-        // Keep the horizontal position within the screen and some padding
-        let minX = screenFrame.minX + padding
-        let maxX = screenFrame.maxX - windowSize.width - padding
-
-        if newWindowOrigin.x < minX {
-            newWindowOrigin.x = minX
-        } else if newWindowOrigin.x > maxX {
-            newWindowOrigin.x = maxX
-        }
-
-        // Check if the window will go below the screen
-        // We determine whether the window drops down or upwards by choosing which
-        // corner of the window we will position: `setFrameOrigin` or `setFrameTopLeftPoint`
-        if newWindowOrigin.y - windowSize.height < screenFrame.minY {
-            // If the cursor itself is below the screen, then position the window
-            // at the bottom of the screen with some padding
-            if newWindowOrigin.y < screenFrame.minY {
-                newWindowOrigin.y = screenFrame.minY + padding
-            } else {
-                // Place above the cursor
-                newWindowOrigin.y += cursorRect.height
-            }
-
+        // Prefer below the cursor; flip above when there isn't room.
+        var originY = cursorRect.minY - size.height - padding
+        if originY < minY {
+            originY = cursorRect.maxY + padding
             isWindowAboveCursor = true
-            window.setFrameOrigin(newWindowOrigin)
         } else {
-            // If the window goes above the screen, position it below the screen with padding
-            let maxY = screenFrame.maxY - padding
-            if newWindowOrigin.y > maxY {
-                newWindowOrigin.y = maxY
-            }
-
             isWindowAboveCursor = false
-            window.setFrameTopLeftPoint(newWindowOrigin)
         }
+        originY = min(max(originY, minY), maxY)
+
+        // Align with the cursor's left edge, clamped horizontally.
+        let minX = screenFrame.minX + padding
+        let maxX = max(minX, screenFrame.maxX - size.width - padding)
+        let originX = min(max(cursorRect.minX, minX), maxX)
+
+        window.setFrameOrigin(NSPoint(x: originX, y: originY))
+        print("[suggest] constrainWindow: cursor=\(cursorRect) screen=\(screenFrame) -> origin=(\(originX), \(originY))")
     }
 
     func updateWindowSize(newSize: NSSize) {
