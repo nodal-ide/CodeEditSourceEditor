@@ -31,6 +31,17 @@ public class TextViewController: NSViewController {
     var gutterView: GutterView!
     var minimapView: MinimapView!
 
+    /// Line numbers (1-based) that display a breakpoint marker. Setting this updates the gutter.
+    public var breakpointLines: Set<Int> = [] {
+        didSet {
+            gutterView?.breakpointLines = breakpointLines
+            gutterView?.needsDisplay = true
+        }
+    }
+
+    /// Called when the user clicks a gutter line number, with the 1-based line number.
+    public var onToggleBreakpoint: ((Int) -> Void)?
+
     /// The reformatting guide view
     var reformattingGuideView: ReformattingGuideView!
 

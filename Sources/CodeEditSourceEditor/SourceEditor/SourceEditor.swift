@@ -45,7 +45,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         symbolsDelegate: SymbolsDelegate? = nil,
         inlayHintDelegate: InlayHintDelegate? = nil,
         foldRangeDelegate: FoldRangeDelegate? = nil,
-        documentHighlightDelegate: DocumentHighlightDelegate? = nil
+        documentHighlightDelegate: DocumentHighlightDelegate? = nil,
+        breakpointLines: Set<Int> = [],
+        onToggleBreakpoint: ((Int) -> Void)? = nil
     ) {
         self.text = .binding(text)
         self.language = language
@@ -64,6 +66,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.inlayHintDelegate = inlayHintDelegate
         self.foldRangeDelegate = foldRangeDelegate
         self.documentHighlightDelegate = documentHighlightDelegate
+        self.breakpointLines = breakpointLines
+        self.onToggleBreakpoint = onToggleBreakpoint
     }
 
     /// Initializes a new source editor
@@ -94,7 +98,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         symbolsDelegate: SymbolsDelegate? = nil,
         inlayHintDelegate: InlayHintDelegate? = nil,
         foldRangeDelegate: FoldRangeDelegate? = nil,
-        documentHighlightDelegate: DocumentHighlightDelegate? = nil
+        documentHighlightDelegate: DocumentHighlightDelegate? = nil,
+        breakpointLines: Set<Int> = [],
+        onToggleBreakpoint: ((Int) -> Void)? = nil
     ) {
         self.text = .storage(text)
         self.language = language
@@ -113,6 +119,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.inlayHintDelegate = inlayHintDelegate
         self.foldRangeDelegate = foldRangeDelegate
         self.documentHighlightDelegate = documentHighlightDelegate
+        self.breakpointLines = breakpointLines
+        self.onToggleBreakpoint = onToggleBreakpoint
     }
 
     var text: TextAPI
@@ -132,6 +140,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var inlayHintDelegate: InlayHintDelegate?
     weak var foldRangeDelegate: FoldRangeDelegate?
     weak var documentHighlightDelegate: DocumentHighlightDelegate?
+    var breakpointLines: Set<Int> = []
+    var onToggleBreakpoint: ((Int) -> Void)?
 
     public typealias NSViewControllerType = TextViewController
 
@@ -168,6 +178,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
             controller.setCursorPositions(state.cursorPositions ?? [])
         }
 
+        controller.breakpointLines = breakpointLines
+        controller.onToggleBreakpoint = onToggleBreakpoint
         context.coordinator.setController(controller)
         return controller
     }
@@ -187,6 +199,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.inlayHintDelegate = inlayHintDelegate
         controller.foldRangeDelegate = foldRangeDelegate
         controller.documentHighlightDelegate = documentHighlightDelegate
+        controller.breakpointLines = breakpointLines
+        controller.onToggleBreakpoint = onToggleBreakpoint
 
         context.coordinator.updateHighlightProviders(highlightProviders)
 

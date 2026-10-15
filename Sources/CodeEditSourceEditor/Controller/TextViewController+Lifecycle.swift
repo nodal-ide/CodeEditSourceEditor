@@ -44,6 +44,9 @@ extension TextViewController {
             delegate: self
         )
         gutterView.updateWidthIfNeeded()
+        gutterView.onToggleBreakpoint = { [weak self] line in
+            self?.onToggleBreakpoint?(line)
+        }
         scrollView.addFloatingSubview(gutterView, for: .horizontal)
 
         reformattingGuideView = ReformattingGuideView(configuration: configuration)

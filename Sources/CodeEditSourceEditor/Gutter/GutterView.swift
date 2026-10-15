@@ -67,6 +67,13 @@ public class GutterView: NSView {
     @Invalidating(.display)
     var highlightSelectedLines: Bool = true
 
+    /// Line numbers (1-based) that display a breakpoint marker.
+    @Invalidating(.display)
+    var breakpointLines: Set<Int> = []
+
+    /// Called when the user clicks a line number to toggle a breakpoint.
+    var onToggleBreakpoint: ((Int) -> Void)?
+
     @Invalidating(.display)
     var selectedLineTextColor: NSColor? = .labelColor
 
@@ -321,6 +328,42 @@ public class GutterView: NSView {
         context.restoreGState()
     }
 
+    /// Toggles a breakpoint when a line number is clicked (the folding ribbon handles its own clicks).
+    override public func mouseDown(with event: NSEvent) {
+        guard let textView else {
+            super.mouseDown(with: event)
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        let ribbonX = frame.width - edgeInsets.trailing - foldingRibbonWidth
+        guard point.x < ribbonX,
+              let line = textView.layoutManager.textLineForPosition(point.y) else {
+            super.mouseDown(with: event)
+            return
+        }
+        onToggleBreakpoint?(line.index + 1)
+    }
+
+    /// Draws a breakpoint marker in the gutter for each breakpoint line.
+    private func drawBreakpoints(_ context: CGContext, dirtyRect: NSRect) {
+        guard !breakpointLines.isEmpty, let textView else { return }
+        let diameter: CGFloat = 12
+        context.saveGState()
+        context.clip(to: dirtyRect)
+        context.setFillColor(NSColor.systemRed.cgColor)
+        for linePosition in textView.layoutManager.linesStartingAt(dirtyRect.minY, until: dirtyRect.maxY) {
+            guard breakpointLines.contains(linePosition.index + 1) else { continue }
+            let rect = CGRect(
+                x: backgroundEdgeInsets.leading + 4,
+                y: linePosition.yPos + (linePosition.height - diameter) / 2,
+                width: diameter,
+                height: diameter
+            )
+            context.fillEllipse(in: rect)
+        }
+        context.restoreGState()
+    }
+
     override public func setNeedsDisplay(_ invalidRect: NSRect) {
         updateWidthIfNeeded()
         super.setNeedsDisplay(invalidRect)
@@ -334,6 +377,7 @@ public class GutterView: NSView {
         drawBackground(context, dirtyRect: dirtyRect)
         drawSelectedLines(context)
         drawLineNumbers(context, dirtyRect: dirtyRect)
+        drawBreakpoints(context, dirtyRect: dirtyRect)
         context.restoreGState()
     }
 
