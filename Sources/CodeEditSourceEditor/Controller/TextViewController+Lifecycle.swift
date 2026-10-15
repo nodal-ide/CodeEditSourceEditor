@@ -126,6 +126,7 @@ extension TextViewController {
             self?.gutterView.needsDisplay = true
             self?.minimapXConstraint?.constant = clipView.bounds.origin.x
             self?.hoverModel.cancel()
+            self?.inlayHintModel.refresh()
             NotificationCenter.default.post(name: Self.scrollPositionDidUpdateNotification, object: self)
         }
     }

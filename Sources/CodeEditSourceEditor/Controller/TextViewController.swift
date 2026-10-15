@@ -153,6 +153,18 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides inline inlay hints. See ``InlayHintDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var inlayHintDelegate: InlayHintDelegate? {
+        didSet {
+            inlayHintModel.delegate = inlayHintDelegate
+            if oldValue !== inlayHintDelegate {
+                inlayHintModel.invalidate()
+                inlayHintModel.refresh()
+            }
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -263,6 +275,8 @@ public class TextViewController: NSViewController {
 
     var symbolsModel: SymbolsModel
 
+    var inlayHintModel: InlayHintModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -296,7 +310,8 @@ public class TextViewController: NSViewController {
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
         codeActionDelegate: CodeActionDelegate? = nil,
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
-        symbolsDelegate: SymbolsDelegate? = nil
+        symbolsDelegate: SymbolsDelegate? = nil,
+        inlayHintDelegate: InlayHintDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -334,6 +349,10 @@ public class TextViewController: NSViewController {
             controller: nil,
             delegate: symbolsDelegate
         )
+        self.inlayHintModel = InlayHintModel(
+            controller: nil,
+            delegate: inlayHintDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
@@ -344,6 +363,7 @@ public class TextViewController: NSViewController {
         codeActionModel.controller = self
         diagnosticsModel.controller = self
         symbolsModel.controller = self
+        inlayHintModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),

@@ -42,7 +42,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
         codeActionDelegate: CodeActionDelegate? = nil,
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
-        symbolsDelegate: SymbolsDelegate? = nil
+        symbolsDelegate: SymbolsDelegate? = nil,
+        inlayHintDelegate: InlayHintDelegate? = nil
     ) {
         self.text = .binding(text)
         self.language = language
@@ -58,6 +59,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.codeActionDelegate = codeActionDelegate
         self.diagnosticsDelegate = diagnosticsDelegate
         self.symbolsDelegate = symbolsDelegate
+        self.inlayHintDelegate = inlayHintDelegate
     }
 
     /// Initializes a new source editor
@@ -85,7 +87,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         signatureHelpDelegate: SignatureHelpDelegate? = nil,
         codeActionDelegate: CodeActionDelegate? = nil,
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
-        symbolsDelegate: SymbolsDelegate? = nil
+        symbolsDelegate: SymbolsDelegate? = nil,
+        inlayHintDelegate: InlayHintDelegate? = nil
     ) {
         self.text = .storage(text)
         self.language = language
@@ -101,6 +104,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.codeActionDelegate = codeActionDelegate
         self.diagnosticsDelegate = diagnosticsDelegate
         self.symbolsDelegate = symbolsDelegate
+        self.inlayHintDelegate = inlayHintDelegate
     }
 
     var text: TextAPI
@@ -117,6 +121,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var codeActionDelegate: CodeActionDelegate?
     weak var diagnosticsDelegate: DiagnosticsDelegate?
     weak var symbolsDelegate: SymbolsDelegate?
+    weak var inlayHintDelegate: InlayHintDelegate?
 
     public typealias NSViewControllerType = TextViewController
 
@@ -135,7 +140,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
             signatureHelpDelegate: signatureHelpDelegate,
             codeActionDelegate: codeActionDelegate,
             diagnosticsDelegate: diagnosticsDelegate,
-            symbolsDelegate: symbolsDelegate
+            symbolsDelegate: symbolsDelegate,
+            inlayHintDelegate: inlayHintDelegate
         )
         switch text {
         case .binding(let binding):
@@ -166,6 +172,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.codeActionDelegate = codeActionDelegate
         controller.diagnosticsDelegate = diagnosticsDelegate
         controller.symbolsDelegate = symbolsDelegate
+        controller.inlayHintDelegate = inlayHintDelegate
 
         context.coordinator.updateHighlightProviders(highlightProviders)
 
