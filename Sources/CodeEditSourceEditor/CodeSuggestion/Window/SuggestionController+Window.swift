@@ -82,7 +82,9 @@ extension SuggestionController {
     // MARK: - Private Methods
 
     static func makeWindow() -> NSWindow {
-        let window = NSWindow(
+        // Must be an `NSPanel`: `.nonactivatingPanel`/`.utilityWindow` are panel-only style masks and are
+        // rejected on a plain `NSWindow`, leaving the completion popup unable to display.
+        let window = NSPanel(
             contentRect: .zero,
             styleMask: [.resizable, .fullSizeContentView, .nonactivatingPanel, .utilityWindow],
             backing: .buffered,
