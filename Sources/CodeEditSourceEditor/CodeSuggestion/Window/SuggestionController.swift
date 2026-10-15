@@ -121,6 +121,7 @@ public final class SuggestionController: NSWindowController {
         super.showWindow(nil)
         window.orderFront(nil)
         window.contentViewController?.viewWillAppear()
+        print("[suggest] showWindow: isVisible=\(window.isVisible) frame=\(window.frame) parentFrame=\(parentWindow.frame)")
     }
 
     /// Move the completion selection.

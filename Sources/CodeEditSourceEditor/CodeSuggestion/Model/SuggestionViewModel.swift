@@ -29,7 +29,10 @@ final class SuggestionViewModel: ObservableObject {
         self.delegate = nil
         itemsRequestTask?.cancel()
 
-        guard let targetParentWindow = textView.view.window else { return }
+        guard let targetParentWindow = textView.view.window else {
+            print("[suggest] showCompletions: no parent window")
+            return
+        }
 
         self.activeTextView = textView
         self.delegate = delegate
@@ -41,6 +44,7 @@ final class SuggestionViewModel: ObservableObject {
                     textView: textView,
                     cursorPosition: cursorPosition
                 ) else {
+                    print("[suggest] showCompletions: delegate returned nil")
                     return
                 }
 
@@ -48,21 +52,30 @@ final class SuggestionViewModel: ObservableObject {
                 try await MainActor.run {
                     try Task.checkCancellation()
 
-                    guard let cursorPosition = textView.resolveCursorPosition(completionItems.windowPosition),
-                          let cursorRect = textView.textView.layoutManager.rectForOffset(
-                            cursorPosition.range.location
-                          ),
-                          let cursorRect = textView.view.window?.convertToScreen(
-                            textView.textView.convert(cursorRect, to: nil)
-                          ) else {
+                    guard let cursorPosition = textView.resolveCursorPosition(completionItems.windowPosition) else {
+                        print("[suggest] showCompletions: resolveCursorPosition nil")
+                        return
+                    }
+                    guard let cursorRect = textView.textView.layoutManager.rectForOffset(
+                        cursorPosition.range.location
+                    ) else {
+                        print("[suggest] showCompletions: rectForOffset nil")
+                        return
+                    }
+                    guard let cursorRect = textView.view.window?.convertToScreen(
+                        textView.textView.convert(cursorRect, to: nil)
+                    ) else {
+                        print("[suggest] showCompletions: convertToScreen nil")
                         return
                     }
 
+                    print("[suggest] showCompletions: showing \(completionItems.items.count) items")
                     self.items = completionItems.items
                     self.syntaxHighlightedCache = [:]
                     showWindowOnParent(targetParentWindow, cursorRect)
                 }
             } catch {
+                print("[suggest] showCompletions error: \(error)")
                 return
             }
         }
