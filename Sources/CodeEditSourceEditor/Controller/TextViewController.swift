@@ -159,8 +159,12 @@ public class TextViewController: NSViewController {
         didSet {
             inlayHintModel.delegate = inlayHintDelegate
             if oldValue !== inlayHintDelegate {
-                inlayHintModel.invalidate()
-                inlayHintModel.refresh()
+                if inlayHintDelegate == nil {
+                    inlayHintModel.clear()
+                } else {
+                    inlayHintModel.invalidate()
+                    inlayHintModel.refresh()
+                }
             }
         }
     }
