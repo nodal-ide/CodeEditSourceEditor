@@ -32,6 +32,7 @@ extension TextViewController: TextViewDelegate {
         signatureHelpModel.textDidChange()
         diagnosticsModel.refresh()
         inlayHintModel.refresh()
+        foldRangeModel.refresh()
     }
 
     public func textView(_ textView: TextView, shouldReplaceContentsIn range: NSRange, with string: String) -> Bool {

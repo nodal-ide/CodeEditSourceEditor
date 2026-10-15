@@ -169,6 +169,21 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// A delegate that provides folding ranges (e.g. from a language server). See ``FoldRangeDelegate``.
+    /// - Note: The ``TextViewController`` keeps only a `weak` reference to this object.
+    public weak var foldRangeDelegate: FoldRangeDelegate? {
+        didSet {
+            foldRangeModel.delegate = foldRangeDelegate
+            if oldValue !== foldRangeDelegate {
+                if foldRangeDelegate == nil {
+                    foldRangeModel.clear()
+                } else {
+                    foldRangeModel.refresh()
+                }
+            }
+        }
+    }
+
     // MARK: - Config Helpers
 
     /// The font to use in the `textView`
@@ -281,6 +296,8 @@ public class TextViewController: NSViewController {
 
     var inlayHintModel: InlayHintModel
 
+    var foldRangeModel: FoldRangeModel
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
@@ -315,7 +332,8 @@ public class TextViewController: NSViewController {
         codeActionDelegate: CodeActionDelegate? = nil,
         diagnosticsDelegate: DiagnosticsDelegate? = nil,
         symbolsDelegate: SymbolsDelegate? = nil,
-        inlayHintDelegate: InlayHintDelegate? = nil
+        inlayHintDelegate: InlayHintDelegate? = nil,
+        foldRangeDelegate: FoldRangeDelegate? = nil
     ) {
         self.language = language
         self.configuration = configuration
@@ -357,6 +375,10 @@ public class TextViewController: NSViewController {
             controller: nil,
             delegate: inlayHintDelegate
         )
+        self.foldRangeModel = FoldRangeModel(
+            controller: nil,
+            delegate: foldRangeDelegate
+        )
 
         super.init(nibName: nil, bundle: nil)
 
@@ -368,6 +390,7 @@ public class TextViewController: NSViewController {
         diagnosticsModel.controller = self
         symbolsModel.controller = self
         inlayHintModel.controller = self
+        foldRangeModel.controller = self
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),
