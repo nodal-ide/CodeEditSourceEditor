@@ -34,7 +34,6 @@ extension SuggestionController {
         let originX = min(max(cursorRect.minX, minX), maxX)
 
         window.setFrameOrigin(NSPoint(x: originX, y: originY))
-        print("[suggest] constrainWindow: cursor=\(cursorRect) screen=\(screenFrame) -> origin=(\(originX), \(originY))")
     }
 
     func updateWindowSize(newSize: NSSize) {
@@ -62,7 +61,6 @@ extension SuggestionController {
             origin.y = min(max(origin.y, screenFrame.minY + 6), max(screenFrame.minY + 6, screenFrame.maxY - newSize.height - 6))
             window.setFrameOrigin(origin)
         }
-        print("[suggest] updateWindowSize: size=\(newSize) frame=\(window.frame) visible=\(window.isVisible)")
     }
 
     // MARK: - Private Methods
