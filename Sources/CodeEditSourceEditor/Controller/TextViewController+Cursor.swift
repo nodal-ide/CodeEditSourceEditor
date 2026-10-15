@@ -88,6 +88,16 @@ extension TextViewController {
         }
     }
 
+    /// Collapses every foldable region in the document.
+    public func foldAll() {
+        gutterView?.foldingRibbon.model?.foldAll()
+    }
+
+    /// Expands every folded region in the document.
+    public func unfoldAll() {
+        gutterView?.foldingRibbon.model?.unfoldAll()
+    }
+
     /// Requests and presents code actions (quick fixes) for the current cursor.
     public func showCodeActions() {
         guard let position = cursorPositions.first else { return }

@@ -113,6 +113,50 @@ class LineFoldModel: NSObject, NSTextStorageDelegate, ObservableObject {
         return deepestFold
     }
 
+    // MARK: - Collapse / Expand
+
+    /// Collapses every foldable region in the document.
+    func foldAll() {
+        guard let controller else { return }
+        let length = controller.textView.textStorage.length
+        guard length > 0 else { return }
+        for fold in foldCache.folds(in: 0..<length) where !fold.isCollapsed {
+            setFoldCollapsed(fold, collapsed: true)
+        }
+    }
+
+    /// Expands every folded region in the document.
+    func unfoldAll() {
+        guard let controller else { return }
+        let length = controller.textView.textStorage.length
+        guard length > 0 else { return }
+        for fold in foldCache.folds(in: 0..<length) where fold.isCollapsed {
+            setFoldCollapsed(fold, collapsed: false)
+        }
+    }
+
+    /// Collapses or expands a single fold, adding/removing the placeholder attachment as needed.
+    func setFoldCollapsed(_ fold: FoldRange, collapsed: Bool) {
+        guard let controller, let layoutManager = controller.textView.layoutManager else { return }
+        let range = NSRange(fold.range)
+        let existing = layoutManager.attachments
+            .getAttachmentsOverlapping(range)
+            .first { $0.attachment is LineFoldPlaceholder && $0.range == range }
+
+        if collapsed, existing == nil {
+            let placeholder = LineFoldPlaceholder(delegate: self, fold: fold, charWidth: controller.font.charWidth)
+            layoutManager.attachments.add(placeholder, for: range)
+        } else if !collapsed, let existing {
+            layoutManager.attachments.remove(atOffset: existing.range.location)
+        }
+
+        if fold.isCollapsed != collapsed {
+            foldCache.toggleCollapse(forFold: fold)
+        }
+        controller.textView.needsLayout = true
+        controller.gutterView.needsDisplay = true
+    }
+
     func emphasizeBracketsForFold(_ fold: FoldRange) {
         clearEmphasis()
 
