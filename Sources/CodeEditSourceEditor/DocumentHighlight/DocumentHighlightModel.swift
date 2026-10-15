@@ -52,14 +52,14 @@ final class DocumentHighlightModel {
     }
 
     func clear() {
-        guard let manager = controller?.textView.emphasisManager else { return }
+        guard let manager = controller?.textView?.emphasisManager else { return }
         manager.removeEmphases(for: Self.emphasisID)
         manager.updateLayerBackgrounds()
     }
 
     private func apply(_ highlights: [EditorDocumentHighlight]) {
-        guard let manager = controller?.textView.emphasisManager else { return }
-        let length = controller?.textView.textStorage?.length ?? 0
+        guard let manager = controller?.textView?.emphasisManager else { return }
+        let length = controller?.textView?.textStorage?.length ?? 0
         let emphases = highlights.compactMap { highlight -> Emphasis? in
             let range = highlight.range
             guard range.location >= 0, NSMaxRange(range) <= length else { return nil }

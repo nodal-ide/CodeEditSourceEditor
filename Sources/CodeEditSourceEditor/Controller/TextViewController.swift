@@ -418,7 +418,6 @@ public class TextViewController: NSViewController {
         inlayHintModel.controller = self
         foldRangeModel.controller = self
         documentHighlightModel.controller = self
-        documentHighlightModel.start()
         suggestionTriggerModel.controller = self
 
         if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),
@@ -440,6 +439,9 @@ public class TextViewController: NSViewController {
         )
 
         textView.layoutManager.invisibleCharacterDelegate = invisibleCharactersCoordinator
+
+        // Start after `textView` exists so the initial refresh/clear can safely access it.
+        documentHighlightModel.start()
 
         coordinators.forEach {
             $0.prepareCoordinator(controller: self)
