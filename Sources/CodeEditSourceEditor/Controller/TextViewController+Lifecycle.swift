@@ -276,9 +276,13 @@ extension TextViewController {
         let commandKey = NSEvent.ModifierFlags.command
         let controlKey = NSEvent.ModifierFlags.control
 
-        // Escape (keyCode 53): close open UI (find panel / completions), otherwise offer completions.
-        // Detected by key code so it works regardless of the event's `characters`/modifier flags.
+        // Escape (keyCode 53): end an active snippet, close open UI (find panel / completions), otherwise
+        // offer completions. Detected by key code so it works regardless of the event's `characters`/modifiers.
         if event.keyCode == 53 {
+            if snippetSession != nil {
+                endSnippetSession()
+                return nil
+            }
             if findViewController?.viewModel.isShowingFindPanel == true {
                 findViewController?.hideFindPanel()
                 return nil
@@ -334,6 +338,12 @@ extension TextViewController {
     /// - Returns: The original event if it should be passed on, or `nil` to indicate handling within the method.
     func handleTab(event: NSEvent, modifierFlags: UInt) -> NSEvent? {
         let shiftKey = NSEvent.ModifierFlags.shift.rawValue
+
+        // An active snippet consumes Tab / Shift-Tab to move between tab stops.
+        if snippetSession != nil {
+            _ = snippetTab(backwards: modifierFlags == shiftKey)
+            return nil
+        }
 
         if modifierFlags == shiftKey {
             handleIndent(inwards: true)

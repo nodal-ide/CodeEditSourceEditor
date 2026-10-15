@@ -20,6 +20,8 @@ extension TextViewController: TextViewDelegate {
 
     public func textView(_ textView: TextView, didReplaceContentsIn range: NSRange, with string: String) {
         gutterView.needsDisplay = true
+        // Keep an active snippet's tab stops in sync with edits.
+        snippetSession?.updateAfterEdit(range: range, delta: (string as NSString).length - range.length)
         for coordinator in self.textCoordinators.values() {
             if let coordinator = coordinator as? TextViewDelegate {
                 coordinator.textView(textView, didReplaceContentsIn: range, with: string)

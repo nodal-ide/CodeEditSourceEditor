@@ -316,6 +316,9 @@ public class TextViewController: NSViewController {
 
     var documentHighlightModel: DocumentHighlightModel
 
+    /// The active snippet session (tab stops), if a snippet is being inserted.
+    var snippetSession: SnippetSession?
+
     var cancellables = Set<AnyCancellable>()
 
     /// The trailing inset for the editor. Grows when line wrapping is disabled or when the minimap is shown.
