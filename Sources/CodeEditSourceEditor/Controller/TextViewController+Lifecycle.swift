@@ -276,6 +276,20 @@ extension TextViewController {
         let commandKey = NSEvent.ModifierFlags.command
         let controlKey = NSEvent.ModifierFlags.control
 
+        // Escape (keyCode 53): close open UI (find panel / completions), otherwise offer completions.
+        // Detected by key code so it works regardless of the event's `characters`/modifier flags.
+        if event.keyCode == 53 {
+            if findViewController?.viewModel.isShowingFindPanel == true {
+                findViewController?.hideFindPanel()
+                return nil
+            }
+            if SuggestionController.shared.isVisible {
+                SuggestionController.shared.close()
+                return nil
+            }
+            return handleShowCompletions(event)
+        }
+
         // ⌘⌥O — Go to Symbol (document outline). (⌘⇧O is reserved for the app's Open Quickly.)
         if modifierFlags.contains([.command, .option]),
            event.charactersIgnoringModifiers?.lowercased() == "o" {
@@ -300,13 +314,6 @@ extension TextViewController {
             _ = self.textView.resignFirstResponder()
             self.findViewController?.showFindPanel()
             return nil
-        case (.init(rawValue: 0), "\u{1b}"): // Escape key
-            if findViewController?.viewModel.isShowingFindPanel == true {
-                self.findViewController?.hideFindPanel()
-                return nil
-            }
-            // Attempt to show completions otherwise
-            return handleShowCompletions(event)
         case (controlKey, " "):
             return handleShowCompletions(event)
         case ([NSEvent.ModifierFlags.command, NSEvent.ModifierFlags.control], "j"):

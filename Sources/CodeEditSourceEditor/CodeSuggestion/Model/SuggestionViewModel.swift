@@ -110,6 +110,9 @@ final class SuggestionViewModel: ObservableObject {
     }
 
     func willClose() {
+        // Cancel a pending request so it can't re-show the window after the user dismissed it.
+        itemsRequestTask?.cancel()
+        itemsRequestTask = nil
         items.removeAll()
         activeTextView = nil
     }
