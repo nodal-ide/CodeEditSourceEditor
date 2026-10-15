@@ -42,6 +42,26 @@ public class TextViewController: NSViewController {
     /// Called when the user clicks a gutter line number, with the 1-based line number.
     public var onToggleBreakpoint: ((Int) -> Void)?
 
+    /// The 1-based line of the current debugger stop to highlight, or `nil`.
+    public var debugLine: Int? {
+        didSet { updateDebugLineHighlight() }
+    }
+
+    private static let debugLineEmphasisID = "debugCurrentLine"
+
+    private func updateDebugLineHighlight() {
+        guard let manager = textView?.emphasisManager else { return }
+        if let debugLine, let line = textView?.layoutManager.textLineForIndex(debugLine - 1) {
+            manager.replaceEmphases(
+                [Emphasis(range: line.range, style: .standard, inactive: true)],
+                for: Self.debugLineEmphasisID
+            )
+        } else {
+            manager.removeEmphases(for: Self.debugLineEmphasisID)
+        }
+        manager.updateLayerBackgrounds()
+    }
+
     /// The reformatting guide view
     var reformattingGuideView: ReformattingGuideView!
 

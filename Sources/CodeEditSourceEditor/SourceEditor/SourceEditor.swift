@@ -47,7 +47,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         foldRangeDelegate: FoldRangeDelegate? = nil,
         documentHighlightDelegate: DocumentHighlightDelegate? = nil,
         breakpointLines: Set<Int> = [],
-        onToggleBreakpoint: ((Int) -> Void)? = nil
+        onToggleBreakpoint: ((Int) -> Void)? = nil,
+        debugLine: Int? = nil
     ) {
         self.text = .binding(text)
         self.language = language
@@ -68,6 +69,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.documentHighlightDelegate = documentHighlightDelegate
         self.breakpointLines = breakpointLines
         self.onToggleBreakpoint = onToggleBreakpoint
+        self.debugLine = debugLine
     }
 
     /// Initializes a new source editor
@@ -100,7 +102,8 @@ public struct SourceEditor: NSViewControllerRepresentable {
         foldRangeDelegate: FoldRangeDelegate? = nil,
         documentHighlightDelegate: DocumentHighlightDelegate? = nil,
         breakpointLines: Set<Int> = [],
-        onToggleBreakpoint: ((Int) -> Void)? = nil
+        onToggleBreakpoint: ((Int) -> Void)? = nil,
+        debugLine: Int? = nil
     ) {
         self.text = .storage(text)
         self.language = language
@@ -121,6 +124,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.documentHighlightDelegate = documentHighlightDelegate
         self.breakpointLines = breakpointLines
         self.onToggleBreakpoint = onToggleBreakpoint
+        self.debugLine = debugLine
     }
 
     var text: TextAPI
@@ -142,6 +146,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var documentHighlightDelegate: DocumentHighlightDelegate?
     var breakpointLines: Set<Int> = []
     var onToggleBreakpoint: ((Int) -> Void)?
+    var debugLine: Int?
 
     public typealias NSViewControllerType = TextViewController
 
@@ -180,6 +185,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
 
         controller.breakpointLines = breakpointLines
         controller.onToggleBreakpoint = onToggleBreakpoint
+        controller.debugLine = debugLine
         context.coordinator.setController(controller)
         return controller
     }
@@ -201,6 +207,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.documentHighlightDelegate = documentHighlightDelegate
         controller.breakpointLines = breakpointLines
         controller.onToggleBreakpoint = onToggleBreakpoint
+        controller.debugLine = debugLine
 
         context.coordinator.updateHighlightProviders(highlightProviders)
 
