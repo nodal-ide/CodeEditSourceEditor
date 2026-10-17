@@ -76,7 +76,8 @@ public final class TreeSitterClient: HighlightProviding {
         public static var maxSyncEditLength: Int = 1024
 
         /// The maximum length a document can be before all queries and edits must be processed asynchronously.
-        public static var maxSyncContentLength: Int = 1_000_000
+        /// Kept low so large files never block the main thread on parse/highlight work.
+        public static var maxSyncContentLength: Int = 300_000
 
         /// The maximum length a query can be before it must be performed asynchronously.
         public static var maxSyncQueryLength: Int = 4096

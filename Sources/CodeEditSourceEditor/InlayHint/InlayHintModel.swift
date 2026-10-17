@@ -26,20 +26,23 @@ final class InlayHintModel {
     /// Re-requests inlay hints for the visible range after a short debounce. Skips the request when the
     /// visible range and content are unchanged since the last request.
     func refresh() {
-        guard let delegate, let controller, let textView = controller.textView else { return }
+        guard delegate != nil, let controller, let textView = controller.textView else { return }
         guard let range = textView.visibleTextRange else {
             clear()
             return
         }
-        let contentHash = hash(of: range, in: textView)
-        if range == lastRange, contentHash == lastContentHash {
-            return
-        }
 
+        // The content hash is O(visible range); compute it inside the debounced task (once it settles)
+        // rather than synchronously on every keystroke.
         task?.cancel()
         task = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(250))
-            guard !Task.isCancelled, let self, let controller = self.controller else { return }
+            guard !Task.isCancelled, let self, let delegate = self.delegate,
+                  let controller = self.controller, let textView = controller.textView else { return }
+            let contentHash = self.hash(of: range, in: textView)
+            if range == self.lastRange, contentHash == self.lastContentHash {
+                return
+            }
             let hints = await delegate.inlayHints(forVisibleRange: range, textView: controller)
             guard !Task.isCancelled else { return }
             self.lastRange = range
