@@ -58,6 +58,10 @@ final class SuggestionTriggerCharacterModel {
             return
         }
 
+        // Only track cursor moves while a suggestion window is already open (to filter/reposition it).
+        // A plain click must never open the suggestion window.
+        guard SuggestionController.shared.isVisible else { return }
+
         if lastPosition != position.range {
             SuggestionController.shared.cursorsUpdated(
                 textView: controller,

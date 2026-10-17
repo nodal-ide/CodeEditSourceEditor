@@ -58,7 +58,7 @@ final class HoverController {
         )
         panel.isFloatingPanel = true
         panel.becomesKeyOnlyIfNeeded = true
-        panel.hidesOnDeactivate = false
+        panel.hidesOnDeactivate = true
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
