@@ -37,7 +37,7 @@ extension TextViewController {
             pair.0,
             pair.1,
             from: range.location,
-            limit: min((textView.visibleTextRange ?? .zero).max + 4096, textView.documentRange.max),
+            limit: min((textView.visibleTextRange ?? .zero).max + 2048, textView.documentRange.max),
             reverse: false
         ) {
             emphasizeCharacter(characterIndex)
@@ -52,7 +52,7 @@ extension TextViewController {
             pair.1,
             pair.0,
             from: range.location - 1,
-            limit: max((textView.visibleTextRange?.location ?? 0) - 4096, textView.documentRange.location),
+            limit: max((textView.visibleTextRange?.location ?? 0) - 2048, textView.documentRange.location),
             reverse: true
         ) {
             emphasizeCharacter(characterIndex)
