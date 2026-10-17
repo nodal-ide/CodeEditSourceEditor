@@ -20,12 +20,21 @@ public struct EditorDiagnostic: Sendable {
     public let message: String
     /// 1-based line number for display, when known.
     public let line: Int?
+    /// A stable rule identifier (e.g. `php.complexity`), when the source is rule-based. Used to suppress rules.
+    public let ruleID: String?
 
-    public init(range: NSRange, severity: EditorDiagnosticSeverity, message: String, line: Int? = nil) {
+    public init(
+        range: NSRange,
+        severity: EditorDiagnosticSeverity,
+        message: String,
+        line: Int? = nil,
+        ruleID: String? = nil
+    ) {
         self.range = range
         self.severity = severity
         self.message = message
         self.line = line
+        self.ruleID = ruleID
     }
 }
 
