@@ -312,6 +312,12 @@ public class MinimapView: FlippedNSView {
         }
     }
 
+    /// Updates the breakpoint indicators shown in the minimap.
+    public func setBreakpoints(lines: Set<Int>, disabled: Set<Int>) {
+        contentView.breakpointLines = lines
+        contentView.disabledBreakpointLines = disabled
+    }
+
     /// Updates the minimap to reflect a new theme.
     ///
     /// Colors used:

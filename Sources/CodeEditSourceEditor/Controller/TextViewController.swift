@@ -36,6 +36,7 @@ public class TextViewController: NSViewController {
         didSet {
             gutterView?.breakpointLines = breakpointLines
             gutterView?.needsDisplay = true
+            minimapView?.setBreakpoints(lines: breakpointLines, disabled: disabledBreakpointLines)
         }
     }
 
@@ -44,6 +45,7 @@ public class TextViewController: NSViewController {
         didSet {
             gutterView?.disabledBreakpointLines = disabledBreakpointLines
             gutterView?.needsDisplay = true
+            minimapView?.setBreakpoints(lines: breakpointLines, disabled: disabledBreakpointLines)
         }
     }
 
