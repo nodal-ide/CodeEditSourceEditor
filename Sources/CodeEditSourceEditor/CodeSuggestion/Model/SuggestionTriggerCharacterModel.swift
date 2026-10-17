@@ -43,10 +43,14 @@ final class SuggestionTriggerCharacterModel {
             return
         }
 
-        // Only a real trigger character starts a completion session. Typing an ordinary letter/number
-        // must not open the popup (that would run a completion request on every keystroke) — it only
-        // keeps an already-open session filtered.
+        // Only a real trigger character starts a completion session, and ordinary typing only forwards to
+        // the suggestion controller while a session is already visible (to filter it). Otherwise do nothing
+        // — calling into the controller on every keystroke caused input lag / dropped characters.
         let isTrigger = triggerCharacters.contains(String(lastChar))
+        guard isTrigger || SuggestionController.shared.isVisible else {
+            lastPosition = nil
+            return
+        }
 
         let range = NSRange(location: mutation.postApplyRange.max, length: 0)
         lastPosition = range
