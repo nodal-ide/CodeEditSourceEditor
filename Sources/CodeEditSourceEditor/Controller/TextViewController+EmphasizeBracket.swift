@@ -93,10 +93,17 @@ extension TextViewController {
         }
         var closeCount = 0
         var index: Int?
+        // Clamp the enumeration range to the text. When the cursor is outside the visible range (or the
+        // visible range isn't known yet during load) `from`/`limit` can produce a negative-length range,
+        // which throws an NSRangeException from `enumerateSubstrings`.
+        let textLength = textView.textStorage.length
+        let lower = min(from, limit)
+        let upper = max(from, limit)
+        let start = min(max(lower, 0), textLength)
+        let end = min(max(upper, start), textLength)
+        guard start <= end else { return nil }
         textView.textStorage.mutableString.enumerateSubstrings(
-            in: reverse ?
-                NSRange(location: limit, length: from - limit) :
-                NSRange(location: from, length: limit - from),
+            in: NSRange(location: start, length: end - start),
             options: options,
             using: { substring, range, _, stop in
                 if substring == close {
