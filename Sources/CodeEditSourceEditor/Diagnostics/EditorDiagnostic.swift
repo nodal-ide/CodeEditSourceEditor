@@ -6,7 +6,7 @@
 import Foundation
 
 /// Severity of a native editor diagnostic.
-public enum EditorDiagnosticSeverity: Int, Sendable {
+public enum EditorDiagnosticSeverity: Int, Codable, Sendable {
     case error
     case warning
     case info
