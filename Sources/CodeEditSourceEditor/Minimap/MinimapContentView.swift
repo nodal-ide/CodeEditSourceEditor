@@ -18,8 +18,12 @@ public class MinimapContentView: FlippedNSView {
     weak var selectionManager: TextSelectionManager?
 
     /// Breakpoint lines (1-based) to indicate, and the disabled subset.
-    var breakpointLines: Set<Int> = [] { didSet { needsDisplay = true } }
-    var disabledBreakpointLines: Set<Int> = [] { didSet { needsDisplay = true } }
+    var breakpointLines: Set<Int> = [] {
+        didSet { if breakpointLines != oldValue { needsDisplay = true } }
+    }
+    var disabledBreakpointLines: Set<Int> = [] {
+        didSet { if disabledBreakpointLines != oldValue { needsDisplay = true } }
+    }
 
     override public func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)

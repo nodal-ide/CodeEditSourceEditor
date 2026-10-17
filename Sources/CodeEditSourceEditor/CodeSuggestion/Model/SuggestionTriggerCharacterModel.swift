@@ -43,13 +43,18 @@ final class SuggestionTriggerCharacterModel {
             return
         }
 
+        // Only a real trigger character starts a completion session. Typing an ordinary letter/number
+        // must not open the popup (that would run a completion request on every keystroke) — it only
+        // keeps an already-open session filtered.
+        let isTrigger = triggerCharacters.contains(String(lastChar))
+
         let range = NSRange(location: mutation.postApplyRange.max, length: 0)
         lastPosition = range
         SuggestionController.shared.cursorsUpdated(
             textView: controller,
             delegate: completionDelegate,
             position: CursorPosition(range: range),
-            presentIfNot: true
+            presentIfNot: isTrigger
         )
     }
 

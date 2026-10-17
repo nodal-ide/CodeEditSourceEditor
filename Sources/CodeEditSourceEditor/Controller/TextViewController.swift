@@ -34,6 +34,7 @@ public class TextViewController: NSViewController {
     /// Line numbers (1-based) that display a breakpoint marker. Setting this updates the gutter.
     public var breakpointLines: Set<Int> = [] {
         didSet {
+            guard breakpointLines != oldValue else { return }
             gutterView?.breakpointLines = breakpointLines
             gutterView?.needsDisplay = true
             minimapView?.setBreakpoints(lines: breakpointLines, disabled: disabledBreakpointLines)
@@ -43,6 +44,7 @@ public class TextViewController: NSViewController {
     /// Breakpoint lines that are disabled (drawn hollow). Setting this updates the gutter.
     public var disabledBreakpointLines: Set<Int> = [] {
         didSet {
+            guard disabledBreakpointLines != oldValue else { return }
             gutterView?.disabledBreakpointLines = disabledBreakpointLines
             gutterView?.needsDisplay = true
             minimapView?.setBreakpoints(lines: breakpointLines, disabled: disabledBreakpointLines)
