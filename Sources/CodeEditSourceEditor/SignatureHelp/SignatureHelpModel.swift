@@ -34,7 +34,8 @@ final class SignatureHelpModel {
 
     private func update(at offset: Int) {
         guard delegate != nil, let controller, let textView = controller.textView,
-              let context = Self.argumentContext(in: textView.string, at: offset) else {
+              let storage = textView.textStorage,
+              let context = Self.argumentContext(in: storage.mutableString, at: offset) else {
             cancel()
             return
         }
@@ -80,13 +81,16 @@ final class SignatureHelpModel {
 
     /// Returns the callee identifier range and the current argument index if the offset is
     /// inside a `(...)` argument list; otherwise `nil`.
-    static func argumentContext(in text: String, at offset: Int) -> ArgumentContext? {
-        let ns = text as NSString
+    ///
+    /// Operates on the backing `NSMutableString` (no String copy) and bounds the backward scan so a
+    /// stray bracket in a comment/string can't walk the whole document.
+    static func argumentContext(in ns: NSString, at offset: Int) -> ArgumentContext? {
         let safe = min(max(offset, 0), ns.length)
+        let lowerBound = max(0, safe - 4096)
 
         var depth = 0
         var index = safe - 1
-        while index >= 0 {
+        while index >= lowerBound {
             let char = ns.character(at: index)
             if char == 0x29 || char == 0x5D || char == 0x7D { // ) ] }
                 depth += 1
