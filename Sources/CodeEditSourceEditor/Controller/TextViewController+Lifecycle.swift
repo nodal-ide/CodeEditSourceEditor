@@ -201,7 +201,7 @@ extension TextViewController {
 
     func setUpKeyBindings(eventMonitor: inout Any?) {
         eventMonitor = NSEvent.addLocalMonitorForEvents(
-            matching: [.keyDown, .flagsChanged, .mouseMoved, .leftMouseUp]
+            matching: [.keyDown, .flagsChanged, .mouseMoved, .leftMouseUp, .leftMouseDown, .rightMouseDown]
         ) { [weak self] event -> NSEvent? in
             guard let self = self else { return event }
 
@@ -255,6 +255,13 @@ extension TextViewController {
             }
             return event
         case .mouseMoved:
+            // Ignore hover while the pointer is over the top inset (the tab/jump-bar overlay above the text),
+            // so interacting with breadcrumbs doesn't pop a symbol tooltip.
+            if let scrollView = view as? NSScrollView,
+               scrollView.convert(event.locationInWindow, from: nil).y < scrollView.contentInsets.top {
+                hoverModel.cancel()
+                return event
+            }
             if modifierFlags.contains(.command) {
                 hoverModel.cancel()
                 self.jumpToDefinitionModel.mouseHovered(windowCoordinates: event.locationInWindow)
@@ -262,6 +269,9 @@ extension TextViewController {
                 self.jumpToDefinitionModel.cancelHover()
                 hoverModel.mouseMoved(windowCoordinates: event.locationInWindow)
             }
+            return event
+        case .leftMouseDown, .rightMouseDown:
+            hoverModel.cancel()
             return event
         case .leftMouseUp:
             hoverModel.cancel()
