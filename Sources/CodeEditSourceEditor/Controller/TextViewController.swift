@@ -39,8 +39,21 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// Breakpoint lines that are disabled (drawn hollow). Setting this updates the gutter.
+    public var disabledBreakpointLines: Set<Int> = [] {
+        didSet {
+            gutterView?.disabledBreakpointLines = disabledBreakpointLines
+            gutterView?.needsDisplay = true
+        }
+    }
+
     /// Called when the user clicks a gutter line number, with the 1-based line number.
     public var onToggleBreakpoint: ((Int) -> Void)?
+
+    /// Builds the breakpoint right-click menu for a line. Setting this updates the gutter.
+    public var onBreakpointMenu: ((Int) -> NSMenu?)? {
+        didSet { gutterView?.onBreakpointMenu = onBreakpointMenu }
+    }
 
     /// The 1-based line of the current debugger stop to highlight, or `nil`.
     public var debugLine: Int? {

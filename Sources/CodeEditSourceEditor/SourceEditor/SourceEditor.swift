@@ -47,7 +47,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         foldRangeDelegate: FoldRangeDelegate? = nil,
         documentHighlightDelegate: DocumentHighlightDelegate? = nil,
         breakpointLines: Set<Int> = [],
+        disabledBreakpointLines: Set<Int> = [],
         onToggleBreakpoint: ((Int) -> Void)? = nil,
+        onBreakpointMenu: ((Int) -> NSMenu?)? = nil,
         debugLine: Int? = nil
     ) {
         self.text = .binding(text)
@@ -68,7 +70,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.foldRangeDelegate = foldRangeDelegate
         self.documentHighlightDelegate = documentHighlightDelegate
         self.breakpointLines = breakpointLines
+        self.disabledBreakpointLines = disabledBreakpointLines
         self.onToggleBreakpoint = onToggleBreakpoint
+        self.onBreakpointMenu = onBreakpointMenu
         self.debugLine = debugLine
     }
 
@@ -102,7 +106,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         foldRangeDelegate: FoldRangeDelegate? = nil,
         documentHighlightDelegate: DocumentHighlightDelegate? = nil,
         breakpointLines: Set<Int> = [],
+        disabledBreakpointLines: Set<Int> = [],
         onToggleBreakpoint: ((Int) -> Void)? = nil,
+        onBreakpointMenu: ((Int) -> NSMenu?)? = nil,
         debugLine: Int? = nil
     ) {
         self.text = .storage(text)
@@ -123,7 +129,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.foldRangeDelegate = foldRangeDelegate
         self.documentHighlightDelegate = documentHighlightDelegate
         self.breakpointLines = breakpointLines
+        self.disabledBreakpointLines = disabledBreakpointLines
         self.onToggleBreakpoint = onToggleBreakpoint
+        self.onBreakpointMenu = onBreakpointMenu
         self.debugLine = debugLine
     }
 
@@ -145,7 +153,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
     weak var foldRangeDelegate: FoldRangeDelegate?
     weak var documentHighlightDelegate: DocumentHighlightDelegate?
     var breakpointLines: Set<Int> = []
+    var disabledBreakpointLines: Set<Int> = []
     var onToggleBreakpoint: ((Int) -> Void)?
+    var onBreakpointMenu: ((Int) -> NSMenu?)?
     var debugLine: Int?
 
     public typealias NSViewControllerType = TextViewController
@@ -184,7 +194,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         }
 
         controller.breakpointLines = breakpointLines
+        controller.disabledBreakpointLines = disabledBreakpointLines
         controller.onToggleBreakpoint = onToggleBreakpoint
+        controller.onBreakpointMenu = onBreakpointMenu
         controller.debugLine = debugLine
         context.coordinator.setController(controller)
         return controller
@@ -206,7 +218,9 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.foldRangeDelegate = foldRangeDelegate
         controller.documentHighlightDelegate = documentHighlightDelegate
         controller.breakpointLines = breakpointLines
+        controller.disabledBreakpointLines = disabledBreakpointLines
         controller.onToggleBreakpoint = onToggleBreakpoint
+        controller.onBreakpointMenu = onBreakpointMenu
         controller.debugLine = debugLine
 
         context.coordinator.updateHighlightProviders(highlightProviders)

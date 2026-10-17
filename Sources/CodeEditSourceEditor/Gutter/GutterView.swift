@@ -71,8 +71,15 @@ public class GutterView: NSView {
     @Invalidating(.display)
     var breakpointLines: Set<Int> = []
 
+    /// A subset of ``breakpointLines`` that are disabled (drawn hollow / transparent).
+    @Invalidating(.display)
+    var disabledBreakpointLines: Set<Int> = []
+
     /// Called when the user clicks a line number to toggle a breakpoint.
     var onToggleBreakpoint: ((Int) -> Void)?
+
+    /// Builds the context menu for a breakpoint line (right-click). Return `nil` for no menu.
+    var onBreakpointMenu: ((Int) -> NSMenu?)?
 
     @Invalidating(.display)
     var selectedLineTextColor: NSColor? = .labelColor
@@ -344,25 +351,80 @@ public class GutterView: NSView {
         onToggleBreakpoint?(line.index + 1)
     }
 
-    /// Draws a breakpoint marker in the gutter for each breakpoint line.
+    /// Shows the breakpoint context menu (or offers to add one) on right-click.
+    override public func rightMouseDown(with event: NSEvent) {
+        guard let textView else {
+            super.rightMouseDown(with: event)
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        let ribbonX = frame.width - edgeInsets.trailing - foldingRibbonWidth
+        guard point.x < ribbonX,
+              let line = textView.layoutManager.textLineForPosition(point.y),
+              let menu = onBreakpointMenu?(line.index + 1) else {
+            super.rightMouseDown(with: event)
+            return
+        }
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+
+    /// The gutter shows the normal arrow (not the text I-beam) since it isn't editable text.
+    override public func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .arrow)
+    }
+
+    /// Draws a breakpoint marker in the gutter for each breakpoint line, Xcode-style (blue rounded marker;
+    /// disabled breakpoints are drawn hollow).
     private func drawBreakpoints(_ context: CGContext, dirtyRect: NSRect) {
         guard !breakpointLines.isEmpty, let textView else { return }
-        let diameter: CGFloat = 12
+        let size = CGSize(width: 13, height: 13)
         context.saveGState()
         context.clip(to: dirtyRect)
-        context.setFillColor(NSColor.systemRed.cgColor)
         for linePosition in textView.layoutManager.linesStartingAt(dirtyRect.minY, until: dirtyRect.maxY) {
-            guard breakpointLines.contains(linePosition.index + 1) else { continue }
+            let line = linePosition.index + 1
+            guard breakpointLines.contains(line) else { continue }
             let rect = CGRect(
-                x: backgroundEdgeInsets.leading + 4,
-                y: linePosition.yPos + (linePosition.height - diameter) / 2,
-                width: diameter,
-                height: diameter
+                x: backgroundEdgeInsets.leading + 3,
+                y: linePosition.yPos + (linePosition.height - size.height) / 2,
+                width: size.width,
+                height: size.height
             )
-            context.fillEllipse(in: rect)
+            let path = CGPath(roundedRect: rect, cornerWidth: 3.5, cornerHeight: 3.5, transform: nil)
+            if disabledBreakpointLines.contains(line) {
+                context.addPath(path)
+                context.setStrokeColor(Self.breakpointBlue.withAlphaComponent(0.4).cgColor)
+                context.setLineWidth(1.5)
+                context.strokePath()
+            } else {
+                context.saveGState()
+                context.addPath(path)
+                context.clip()
+                let colors = [
+                    Self.breakpointBlue.blended(withFraction: 0.28, of: .white)?.cgColor ?? Self.breakpointBlue.cgColor,
+                    Self.breakpointBlue.cgColor
+                ]
+                if let gradient = CGGradient(
+                    colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                    colors: colors as CFArray,
+                    locations: [0, 1]
+                ) {
+                    // The gutter is flipped, so `minY` is the top edge.
+                    context.drawLinearGradient(
+                        gradient,
+                        start: CGPoint(x: rect.midX, y: rect.minY),
+                        end: CGPoint(x: rect.midX, y: rect.maxY),
+                        options: []
+                    )
+                }
+                context.restoreGState()
+            }
         }
         context.restoreGState()
     }
+
+    /// Xcode's breakpoint blue.
+    private static let breakpointBlue = NSColor(srgbRed: 0.20, green: 0.50, blue: 0.90, alpha: 1)
 
     override public func setNeedsDisplay(_ invalidRect: NSRect) {
         updateWidthIfNeeded()
