@@ -61,7 +61,10 @@ public class TextViewController: NSViewController {
 
     /// The 1-based line of the current debugger stop to highlight, or `nil`.
     public var debugLine: Int? {
-        didSet { updateDebugLineHighlight() }
+        didSet {
+            guard debugLine != oldValue else { return }
+            updateDebugLineHighlight()
+        }
     }
 
     private static let debugLineEmphasisID = "debugCurrentLine"
