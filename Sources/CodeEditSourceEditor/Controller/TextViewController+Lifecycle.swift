@@ -17,8 +17,11 @@ public extension Notification.Name {
 extension TextViewController {
     override public func viewWillAppear() {
         super.viewWillAppear()
-        // The calculation this causes cannot be done until the view knows it's final position
         updateTextInsets()
+        if let position = pendingRestorationScrollPosition {
+            pendingRestorationScrollPosition = nil
+            scrollToPosition(position)
+        }
     }
 
     override public func viewDidAppear() {

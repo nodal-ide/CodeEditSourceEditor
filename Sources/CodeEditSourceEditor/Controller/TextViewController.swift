@@ -92,6 +92,11 @@ public class TextViewController: NSViewController {
     var localEventMonitor: Any?
     var isPostingCursorNotification: Bool = false
 
+    /// Scroll position to apply once, after the view has finished its first layout pass.
+    /// Set by `SourceEditor.makeNSViewController` before the view appears; consumed and cleared in `viewDidAppear`.
+    /// `nil` after the first appearance — live scroll changes flow through the coordinator binding instead.
+    var pendingRestorationScrollPosition: CGPoint?
+
     /// A default `NSParagraphStyle` with a set `lineHeight`
     lazy var paragraphStyle: NSMutableParagraphStyle = generateParagraphStyle()
 
@@ -497,6 +502,40 @@ public class TextViewController: NSViewController {
         self.textView.setText(text)
         self.setUpHighlighter()
         self.gutterView.setNeedsDisplay(self.gutterView.frame)
+    }
+
+    /// Scrolls to a specified position with robust bounds clamping to prevent scrolling into blank overscroll.
+    /// - Parameter position: The desired scroll position.
+    public func scrollToPosition(_ position: CGPoint) {
+        guard let scrollView, let textView else { return }
+        textView.updateFrameIfNeeded()
+
+        let clipView = scrollView.contentView
+        let visibleHeight = clipView.bounds.height
+        let docHeight = textView.frame.height
+        let estimatedDocHeight = textView.layoutManager?.estimatedHeight() ?? 0
+
+        var targetY = position.y
+        if docHeight > 0 && visibleHeight > 0 {
+            let maxAllowedY = max(0, docHeight - visibleHeight)
+            if targetY > maxAllowedY {
+                targetY = maxAllowedY
+            }
+            if targetY < 0 {
+                targetY = 0
+            }
+            if targetY >= estimatedDocHeight && estimatedDocHeight > 0 {
+                targetY = max(0, estimatedDocHeight - (visibleHeight * 0.5))
+            }
+        }
+
+        let clampedPosition = CGPoint(x: max(0, position.x), y: targetY)
+        if clipView.bounds.origin != clampedPosition {
+            scrollView.scroll(clipView, to: clampedPosition)
+            scrollView.reflectScrolledClipView(clipView)
+            gutterView?.needsDisplay = true
+            NotificationCenter.default.post(name: NSView.frameDidChangeNotification, object: textView)
+        }
     }
 
     deinit {

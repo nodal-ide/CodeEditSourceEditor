@@ -198,6 +198,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.onToggleBreakpoint = onToggleBreakpoint
         controller.onBreakpointMenu = onBreakpointMenu
         controller.debugLine = debugLine
+        controller.pendingRestorationScrollPosition = state.scrollPosition
         context.coordinator.setController(controller)
         return controller
     }
@@ -253,14 +254,6 @@ public struct SourceEditor: NSViewControllerRepresentable {
     private func updateControllerWithState(_ state: SourceEditorState, controller: TextViewController) {
         if let cursorPositions = state.cursorPositions, cursorPositions != controller.cursorPositions {
             controller.setCursorPositions(cursorPositions)
-        }
-
-        let scrollView = controller.scrollView
-        if let scrollPosition = state.scrollPosition, scrollPosition != scrollView?.contentView.bounds.origin {
-            controller.scrollView.scroll(controller.scrollView.contentView, to: scrollPosition)
-            controller.scrollView.reflectScrolledClipView(controller.scrollView.contentView)
-            controller.gutterView.needsDisplay = true
-            NotificationCenter.default.post(name: NSView.frameDidChangeNotification, object: controller.textView)
         }
 
         if let findText = state.findText, findText != controller.findViewController?.viewModel.findText {
