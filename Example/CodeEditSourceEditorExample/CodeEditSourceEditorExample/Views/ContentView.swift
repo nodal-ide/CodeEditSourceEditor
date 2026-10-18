@@ -33,7 +33,6 @@ struct ContentView: View {
     @AppStorage("reformatAtColumn") private var reformatAtColumn: Int = 80
 
     @AppStorage("showGutter") private var showGutter: Bool = true
-    @AppStorage("showMinimap") private var showMinimap: Bool = true
     @AppStorage("showReformattingGuide") private var showReformattingGuide: Bool = false
     @AppStorage("showFoldingRibbon") private var showFoldingRibbon: Bool = true
     @State private var invisibleCharactersConfig: InvisibleCharactersConfiguration = .empty
@@ -67,7 +66,6 @@ struct ContentView: View {
                     layout: .init(contentInsets: contentInsets(proxy: proxy)),
                     peripherals: .init(
                         showGutter: showGutter,
-                        showMinimap: showMinimap,
                         showReformattingGuide: showReformattingGuide,
                         invisibleCharactersConfiguration: invisibleCharactersConfig,
                         warningCharacters: warningCharacters
@@ -88,7 +86,6 @@ struct ContentView: View {
                     language: $language,
                     theme: $theme,
                     showGutter: $showGutter,
-                    showMinimap: $showMinimap,
                     indentOption: $indentOption,
                     reformatAtColumn: $reformatAtColumn,
                     showReformattingGuide: $showReformattingGuide,

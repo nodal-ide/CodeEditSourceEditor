@@ -14,8 +14,6 @@ extension TextViewController {
         styleScrollView()
         styleTextView()
 
-        minimapView.updateContentViewHeight()
-        minimapView.updateDocumentVisibleViewPosition()
         reformattingGuideView.updatePosition(in: self)
     }
 }

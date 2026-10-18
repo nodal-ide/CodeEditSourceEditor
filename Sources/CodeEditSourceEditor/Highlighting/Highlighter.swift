@@ -85,7 +85,6 @@ class Highlighter: NSObject {
 
     init(
         textView: TextView,
-        minimapView: MinimapView?,
         providers: [HighlightProviding],
         attributeProvider: ThemeAttributesProviding,
         language: CodeLanguage
@@ -94,7 +93,7 @@ class Highlighter: NSObject {
         self.textView = textView
         self.attributeProvider = attributeProvider
 
-        self.visibleRangeProvider = VisibleRangeProvider(textView: textView, minimapView: minimapView)
+        self.visibleRangeProvider = VisibleRangeProvider(textView: textView)
 
         let providerIds = providers.indices.map({ $0 })
         self.styleContainer = StyledRangeContainer(documentLength: textView.length, providers: providerIds)

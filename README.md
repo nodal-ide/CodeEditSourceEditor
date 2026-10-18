@@ -19,7 +19,7 @@
   </a>
 </p>
 
-An Xcode-inspired code editor view written in Swift powered by tree-sitter for [CodeEdit](https://github.com/CodeEditApp/CodeEdit). Features include syntax highlighting (based on the provided theme), code completion, find and replace, text diff, validation, current line highlighting, minimap, inline messages (warnings and errors), bracket matching, and more.
+An Xcode-inspired code editor view written in Swift powered by tree-sitter for [CodeEdit](https://github.com/CodeEditApp/CodeEdit). Features include syntax highlighting (based on the provided theme), code completion, find and replace, text diff, validation, current line highlighting, inline messages (warnings and errors), bracket matching, and more.
 
 <img width="1012" alt="social-cover-textview" src="https://user-images.githubusercontent.com/806104/194083584-91555dce-ad4c-4066-922e-1eab889134be.png">
 

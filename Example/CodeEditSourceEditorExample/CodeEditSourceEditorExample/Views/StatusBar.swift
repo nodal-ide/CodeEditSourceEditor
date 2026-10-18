@@ -23,7 +23,6 @@ struct StatusBar: View {
     @Binding var language: CodeLanguage
     @Binding var theme: EditorTheme
     @Binding var showGutter: Bool
-    @Binding var showMinimap: Bool
     @Binding var indentOption: IndentOption
     @Binding var reformatAtColumn: Int
     @Binding var showReformattingGuide: Bool
@@ -38,7 +37,6 @@ struct StatusBar: View {
                     .buttonStyle(.borderless)
                 Toggle("Wrap Lines", isOn: $wrapLines)
                 Toggle("Show Gutter", isOn: $showGutter)
-                Toggle("Show Minimap", isOn: $showMinimap)
                 Toggle("Show Reformatting Guide", isOn: $showReformattingGuide)
                 Picker("Reformat column at column", selection: $reformatAtColumn) {
                     ForEach([40, 60, 80, 100, 120, 140, 160, 180, 200], id: \.self) { column in

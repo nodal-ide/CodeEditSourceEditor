@@ -44,7 +44,7 @@ public struct SourceEditorConfiguration: Equatable {
     public var behavior: Behavior
     /// Configure the layout of the editor. Content insets, etc.
     public var layout: Layout
-    /// Configure enabled features on the editor. Gutter (line numbers), minimap, etc.
+    /// Configure enabled features on the editor. Gutter (line numbers), etc.
     public var peripherals: Peripherals
 
     /// Create a new configuration object.
@@ -52,7 +52,7 @@ public struct SourceEditorConfiguration: Equatable {
     ///   - appearance: Configure the appearance of the editor. Font, theme, line height, etc.
     ///   - behavior: Configure the behavior of the editor. Indentation, edit-ability, select-ability, etc.
     ///   - layout: Configure the layout of the editor. Content insets, etc.
-    ///   - peripherals: Configure enabled features on the editor. Gutter (line numbers), minimap, etc.
+    ///   - peripherals: Configure enabled features on the editor. Gutter (line numbers), etc.
     public init(
         appearance: Appearance,
         behavior: Behavior = .init(),
