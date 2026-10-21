@@ -44,6 +44,10 @@ final class HoverCardView: NSVisualEffectView {
         wantsLayer = true
         layer?.cornerRadius = Self.cornerRadius
         layer?.masksToBounds = true
+        updateChrome()
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
+        setAccessibilityLabel(Self.accessibilityLabel(for: content))
 
         let stack = NSStackView()
         stack.orientation = .vertical
@@ -75,7 +79,8 @@ final class HoverCardView: NSVisualEffectView {
                 attributed: layout.attributedContent,
                 width: layout.contentWidth,
                 contentHeight: layout.contentHeight,
-                viewportHeight: layout.viewportHeight
+                viewportHeight: layout.viewportHeight,
+                delegate: self
             )
             scrollView.heightAnchor.constraint(equalToConstant: layout.viewportHeight).isActive = true
             stack.addArrangedSubview(scrollView)
@@ -84,6 +89,33 @@ final class HoverCardView: NSVisualEffectView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        updateChrome()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateChrome()
+    }
+
+    private func updateChrome() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+            layer?.borderWidth = highContrast ? 1 : 0
+            layer?.borderColor = NSColor.labelColor.withAlphaComponent(0.45).cgColor
+        }
+    }
+
+    private static func accessibilityLabel(for content: HoverContent) -> String {
+        guard case .document(let document) = content,
+              let title = document.header?.title.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            return "Hover"
+        }
+        return "Hover: \(title)"
     }
 
     private static func layout(
@@ -146,7 +178,8 @@ final class HoverCardView: NSVisualEffectView {
         attributed: NSAttributedString,
         width: CGFloat,
         contentHeight: CGFloat,
-        viewportHeight: CGFloat
+        viewportHeight: CGFloat,
+        delegate: NSTextViewDelegate?
     ) -> NSScrollView {
         let textStorage = NSTextStorage(attributedString: attributed)
         let layoutManager = NSLayoutManager()
@@ -171,6 +204,7 @@ final class HoverCardView: NSVisualEffectView {
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.autoresizingMask = [.width]
+        textView.delegate = delegate
         textView.minSize = NSSize(width: width, height: 0)
         textView.maxSize = NSSize(width: width, height: .greatestFiniteMagnitude)
         textView.linkTextAttributes = [
@@ -190,5 +224,13 @@ final class HoverCardView: NSVisualEffectView {
         scrollView.horizontalScrollElasticity = .none
         scrollView.documentView = textView
         return scrollView
+    }
+}
+
+extension HoverCardView: NSTextViewDelegate {
+    func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+        guard let url = HoverURLPolicy.safe(link as? URL) else { return true }
+        NSWorkspace.shared.open(url)
+        return true
     }
 }

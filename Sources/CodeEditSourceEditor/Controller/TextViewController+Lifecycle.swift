@@ -184,6 +184,9 @@ extension TextViewController {
             matching: [.keyDown, .flagsChanged, .mouseMoved, .leftMouseUp, .leftMouseDown, .rightMouseDown]
         ) { [weak self] event -> NSEvent? in
             guard let self = self else { return event }
+            if let eventWindow = event.window, eventWindow !== self.view.window {
+                return event
+            }
 
             // Check if this window is key and if the text view is the first responder
             let isKeyWindow = self.view.window?.isKeyWindow ?? false

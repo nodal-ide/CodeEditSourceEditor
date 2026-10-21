@@ -159,7 +159,9 @@ enum HoverMarkdownRenderer {
             }
             if inlineIntent.contains(.code) {
                 font = HoverContentRenderer.codeFont
-                attributes[.backgroundColor] = NSColor.textBackgroundColor.withAlphaComponent(0.45)
+                let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+                attributes[.backgroundColor] = NSColor.textBackgroundColor
+                    .withAlphaComponent(highContrast ? 0.65 : 0.45)
             }
             if inlineIntent.contains(.strikethrough) {
                 attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
@@ -268,7 +270,9 @@ enum HoverCodeStyler {
             return NSAttributedString()
         }
 
-        let background = (theme?.background ?? NSColor.textBackgroundColor).withAlphaComponent(0.55)
+        let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let background = (theme?.background ?? NSColor.textBackgroundColor)
+            .withAlphaComponent(highContrast ? 0.75 : 0.55)
         if let theme,
            let language = language(for: languageHint),
            let highlighted = TreeSitterClient.quickHighlight(

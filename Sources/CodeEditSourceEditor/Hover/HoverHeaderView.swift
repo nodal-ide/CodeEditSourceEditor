@@ -91,6 +91,7 @@ final class HoverHeaderView: NSView {
         imageView.contentTintColor = header.tone.color
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        imageView.setAccessibilityElement(false)
         NSLayoutConstraint.activate([
             imageView.widthAnchor.constraint(equalToConstant: Self.iconSize),
             imageView.heightAnchor.constraint(equalToConstant: Self.iconSize)
@@ -196,7 +197,10 @@ private final class HoverBadgeView: NSView {
 
     private func updateBackground() {
         effectiveAppearance.performAsCurrentDrawingAppearance {
-            layer?.backgroundColor = tone.color.withAlphaComponent(0.14).cgColor
+            let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+            layer?.backgroundColor = tone.color.withAlphaComponent(highContrast ? 0.28 : 0.14).cgColor
+            layer?.borderWidth = highContrast ? 1 : 0
+            layer?.borderColor = tone.color.withAlphaComponent(0.65).cgColor
         }
     }
 }

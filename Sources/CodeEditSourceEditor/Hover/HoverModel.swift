@@ -17,9 +17,13 @@ final class HoverModel {
     weak var diagnosticsModel: DiagnosticsModel?
 
     private var hoverTask: Task<Void, Never>?
+    private var dismissalTask: Task<Void, Never>?
     private var currentRange: NSRange?
+    private var anchorScreenRect: NSRect?
 
     private static let dwell: Duration = .milliseconds(350)
+    private static let dismissalGrace: TimeInterval = 0.2
+    private static let pointerPollInterval: Duration = .milliseconds(50)
 
     init(controller: TextViewController?, treeSitterClient: TreeSitterClient?, delegate: HoverDelegate?) {
         self.controller = controller
@@ -34,10 +38,20 @@ final class HoverModel {
             return
         }
 
+        clearStaleStateIfNeeded()
         let textViewCoords = textView.convert(windowCoordinates, from: nil)
         guard let location = textView.layoutManager.textOffsetAtPoint(textViewCoords),
               location < textView.textStorage.length else {
-            cancel()
+            hoverTask?.cancel()
+            if currentRange != nil || HoverController.shared.isShowing {
+                ensurePointerWatch()
+            }
+            return
+        }
+
+        let screenPoint = textView.window?.convertPoint(toScreen: windowCoordinates) ?? NSEvent.mouseLocation
+
+        if HoverController.shared.contains(screenPoint: screenPoint) {
             return
         }
 
@@ -46,7 +60,10 @@ final class HoverModel {
             return
         }
 
-        cancel()
+        hoverTask?.cancel()
+        if currentRange != nil || HoverController.shared.isShowing {
+            ensurePointerWatch()
+        }
         hoverTask = Task { [weak self] in
             try? await Task.sleep(for: Self.dwell)
             guard !Task.isCancelled else { return }
@@ -66,12 +83,14 @@ final class HoverModel {
             guard let rect = textView.layoutManager.rectsFor(range: anchor).first else { return }
             currentRange = diagnostic.range
             let windowRect = textView.convert(rect, to: nil)
+            anchorScreenRect = window.convertToScreen(windowRect)
             HoverController.shared.show(
                 content: Self.content(for: diagnostic),
                 theme: controller.theme,
                 anchorRect: windowRect,
                 in: window
             )
+            ensurePointerWatch()
             return
         }
 
@@ -87,12 +106,14 @@ final class HoverModel {
         let rects = textView.layoutManager.rectsFor(range: range)
         guard let firstRect = rects.first else { return }
         let windowRect = textView.convert(firstRect, to: nil)
+        anchorScreenRect = window.convertToScreen(windowRect)
         HoverController.shared.show(
             content: info.content,
             theme: controller.theme,
             anchorRect: windowRect,
             in: window
         )
+        ensurePointerWatch()
     }
 
     private static func content(for diagnostic: EditorDiagnostic) -> HoverContent {
@@ -154,7 +175,53 @@ final class HoverModel {
     func cancel() {
         hoverTask?.cancel()
         hoverTask = nil
+        closeCard()
+    }
+
+    private func ensurePointerWatch() {
+        guard dismissalTask == nil else { return }
+        dismissalTask = Task { [weak self] in
+            var outsideSince: Date?
+            while !Task.isCancelled {
+                guard let self else { return }
+                guard HoverController.shared.isShowing else {
+                    self.closeCard()
+                    return
+                }
+                let pointer = NSEvent.mouseLocation
+                let isInside = HoverController.shared.contains(screenPoint: pointer)
+                    || (self.anchorScreenRect?.contains(pointer) ?? false)
+
+                if isInside {
+                    outsideSince = nil
+                } else if let outsideSince {
+                    if Date().timeIntervalSince(outsideSince) >= Self.dismissalGrace {
+                        self.closeCard()
+                        return
+                    }
+                } else {
+                    outsideSince = Date()
+                }
+
+                try? await Task.sleep(for: Self.pointerPollInterval)
+            }
+        }
+    }
+
+    private func clearStaleStateIfNeeded() {
+        guard !HoverController.shared.isShowing,
+              currentRange != nil || anchorScreenRect != nil || dismissalTask != nil else { return }
+        dismissalTask?.cancel()
+        dismissalTask = nil
         currentRange = nil
+        anchorScreenRect = nil
+    }
+
+    private func closeCard() {
+        dismissalTask?.cancel()
+        dismissalTask = nil
+        currentRange = nil
+        anchorScreenRect = nil
         HoverController.shared.close()
     }
 }

@@ -162,9 +162,10 @@ enum HoverBlockRenderer {
         }
 
         guard result.length > 0 else { return nil }
+        let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         result.addAttribute(
             .backgroundColor,
-            value: notice.tone.color.withAlphaComponent(0.10),
+            value: notice.tone.color.withAlphaComponent(highContrast ? 0.22 : 0.10),
             range: NSRange(location: 0, length: result.length)
         )
         return result

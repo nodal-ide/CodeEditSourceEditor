@@ -99,6 +99,23 @@ final class HoverContentRendererTests: XCTestCase {
         XCTAssertEqual(card.preferredSize.height, HoverCardView.maxHeight)
     }
 
+    func testCardExposesAccessibilityLabel() {
+        let card = HoverCardView(content: .document(HoverDocument(
+            header: HoverHeader(title: "charge", systemImageName: "function", tone: .callable)
+        )))
+
+        XCTAssertEqual(card.accessibilityLabel(), "Hover: charge")
+        XCTAssertEqual(card.accessibilityRole(), .group)
+    }
+
+    func testCardContentIsSelectableButNotEditable() {
+        let card = HoverCardView(content: .markdown("Charges a card."))
+        let textView = firstTextView(in: card)
+
+        XCTAssertEqual(textView?.isSelectable, true)
+        XCTAssertEqual(textView?.isEditable, false)
+    }
+
     func testHeaderOnlyCardStaysCompact() {
         let card = HoverCardView(content: .document(HoverDocument(
             header: HoverHeader(
@@ -113,5 +130,17 @@ final class HoverContentRendererTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(card.preferredSize.width, HoverCardView.minWidth)
         XCTAssertLessThanOrEqual(card.preferredSize.width, HoverCardView.maxWidth)
         XCTAssertLessThan(card.preferredSize.height, HoverCardView.maxHeight)
+    }
+
+    private func firstTextView(in view: NSView) -> NSTextView? {
+        if let textView = view as? NSTextView {
+            return textView
+        }
+        for subview in view.subviews {
+            if let textView = firstTextView(in: subview) {
+                return textView
+            }
+        }
+        return nil
     }
 }
