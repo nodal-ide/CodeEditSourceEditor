@@ -34,6 +34,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         configuration: SourceEditorConfiguration,
         state: Binding<SourceEditorState>,
         highlightProviders: [any HighlightProviding]? = nil,
+        catalog: LanguageCatalog = .builtIn,
         undoManager: CEUndoManager? = nil,
         coordinators: [any TextViewCoordinator] = [],
         completionDelegate: CodeSuggestionDelegate? = nil,
@@ -57,6 +58,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.configuration = configuration
         self._state = state
         self.highlightProviders = highlightProviders
+        self.catalog = catalog
         self.undoManager = undoManager
         self.coordinators = coordinators
         self.completionDelegate = completionDelegate
@@ -93,6 +95,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         configuration: SourceEditorConfiguration,
         state: Binding<SourceEditorState>,
         highlightProviders: [any HighlightProviding]? = nil,
+        catalog: LanguageCatalog = .builtIn,
         undoManager: CEUndoManager? = nil,
         coordinators: [any TextViewCoordinator] = [],
         completionDelegate: CodeSuggestionDelegate? = nil,
@@ -116,6 +119,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.configuration = configuration
         self._state = state
         self.highlightProviders = highlightProviders
+        self.catalog = catalog
         self.undoManager = undoManager
         self.coordinators = coordinators
         self.completionDelegate = completionDelegate
@@ -140,6 +144,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     var configuration: SourceEditorConfiguration
     @Binding var state: SourceEditorState
     var highlightProviders: [any HighlightProviding]?
+    var catalog: LanguageCatalog
     var undoManager: CEUndoManager?
     var coordinators: [any TextViewCoordinator]
     weak var completionDelegate: CodeSuggestionDelegate?
@@ -167,6 +172,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
             configuration: configuration,
             cursorPositions: state.cursorPositions ?? [],
             highlightProviders: context.coordinator.highlightProviders,
+            catalog: catalog,
             undoManager: undoManager,
             coordinators: coordinators,
             completionDelegate: completionDelegate,
@@ -204,7 +210,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     }
 
     public func makeCoordinator() -> Coordinator {
-        Coordinator(text: text, editorState: $state, highlightProviders: highlightProviders)
+        Coordinator(text: text, editorState: $state, highlightProviders: highlightProviders, catalog: catalog)
     }
 
     public func updateNSViewController(_ controller: TextViewController, context: Context) {
@@ -241,7 +247,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
             return
         }
 
-        if controller.language != language {
+        if controller.language.id != language.id || controller.language.fingerprint != language.fingerprint {
             controller.language = language
         }
         controller.configuration = configuration
@@ -289,6 +295,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     /// - Returns: True, if the controller's parameters should be updated.
     func paramsAreEqual(controller: NSViewControllerType, coordinator: Coordinator) -> Bool {
         controller.language.id == language.id &&
+        controller.language.fingerprint == language.fingerprint &&
         controller.configuration == configuration &&
         areHighlightProvidersEqual(controller: controller, coordinator: coordinator)
     }

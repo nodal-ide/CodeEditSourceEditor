@@ -12,6 +12,7 @@ import CodeEditLanguages
 /// TreeSitterState contains the tree of language layers that make up the tree-sitter document.
 public final class TreeSitterState {
     private(set) var primaryLayer: CodeLanguage
+    let catalog: LanguageCatalog
     var layers: [LanguageLayer] = []
     var zoneIndex = ZoneIndex()
 
@@ -26,17 +27,20 @@ public final class TreeSitterState {
     ///   - readBlock: Callback used to read blocks of text.
     init(
         codeLanguage: CodeLanguage,
+        catalog: LanguageCatalog = .builtIn,
         readCallback: @escaping SwiftTreeSitter.Predicate.TextProvider,
         readBlock: @escaping Parser.ReadBlock
     ) {
         self.primaryLayer = codeLanguage
+        self.catalog = catalog
         self.setLanguage(codeLanguage)
         self.parseDocument(readCallback: readCallback, readBlock: readBlock)
     }
 
     /// Private initializer used by `copy`
-    private init(codeLanguage: CodeLanguage, layers: [LanguageLayer]) {
+    private init(codeLanguage: CodeLanguage, catalog: LanguageCatalog, layers: [LanguageLayer]) {
         self.primaryLayer = codeLanguage
+        self.catalog = catalog
         self.layers = layers
         rebuildZoneIndex()
     }
@@ -48,7 +52,7 @@ public final class TreeSitterState {
     ///
     /// - Returns: A new, disconnected copy of the tree sitter state.
     public func copy() -> TreeSitterState {
-        TreeSitterState(codeLanguage: primaryLayer, layers: layers.map { $0.copy() })
+        TreeSitterState(codeLanguage: primaryLayer, catalog: catalog, layers: layers.map { $0.copy() })
     }
 
     /// Sets the language for the state. Removing all existing layers.
@@ -64,7 +68,7 @@ public final class TreeSitterState {
                 parser: Parser(),
                 supportsInjections: codeLanguage.additionalHighlights?.contains("injections") ?? false,
                 tree: nil,
-                languageQuery: TreeSitterModel.shared.query(for: codeLanguage.id),
+                languageQuery: TreeSitterModel.shared.query(for: codeLanguage.id, catalog: catalog),
                 ranges: []
             )
         ]
@@ -142,13 +146,13 @@ public final class TreeSitterState {
     ///   - sourceKey: The query or contribution that produced this layer.
     ///   - ranges: The initial ranges owned by this layer.
     public func addLanguageLayer(
-        layerId: TreeSitterLanguage,
+        layerId: LanguageID,
         readBlock: @escaping Parser.ReadBlock,
         parent: LanguageLayer? = nil,
         sourceKey: String? = nil,
         ranges: [NSRange] = []
     ) -> LanguageLayer? {
-        guard let language = CodeLanguage.languageForID(layerId),
+        guard let language = catalog.language(for: layerId),
               let parserLanguage = language.language
         else {
             return nil
@@ -163,7 +167,7 @@ public final class TreeSitterState {
             parser: Parser(),
             supportsInjections: language.additionalHighlights?.contains("injections") ?? false,
             tree: nil,
-            languageQuery: TreeSitterModel.shared.query(for: layerId),
+            languageQuery: TreeSitterModel.shared.query(for: layerId, catalog: catalog),
             ranges: ranges,
             zoneKey: zoneKey,
             depth: (parent?.depth ?? -1) + 1

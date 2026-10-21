@@ -115,7 +115,7 @@ extension TreeSitterState {
         layersByKey: inout [ZoneKey: LanguageLayer],
         touchedLayers: inout Set<LanguageLayer>
     ) -> IndexSet {
-        guard let treeSitterLanguage = TreeSitterLanguage.fromInjectionName(group.languageName),
+        guard let treeSitterLanguage = catalog.language(forIdentifier: group.languageName)?.id,
               layer.depth < Self.maximumZoneDepth,
               !createsCycle(from: layer, injecting: treeSitterLanguage)
         else {
@@ -362,13 +362,13 @@ extension TreeSitterState {
         return result
     }
 
-    private func createsCycle(from layer: LanguageLayer, injecting language: TreeSitterLanguage) -> Bool {
+    private func createsCycle(from layer: LanguageLayer, injecting language: LanguageID) -> Bool {
         if language == primaryLayer.id || language == layer.id {
             return true
         }
 
         var current: LanguageLayer? = layer
-        var visited = Set<TreeSitterLanguage>()
+        var visited = Set<LanguageID>()
 
         while let currentLayer = current, let key = currentLayer.zoneKey {
             if !visited.insert(currentLayer.id).inserted || key.parent == language {

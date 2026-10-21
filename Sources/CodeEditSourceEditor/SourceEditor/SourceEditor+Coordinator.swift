@@ -9,6 +9,7 @@ import AppKit
 import SwiftUI
 import Combine
 import CodeEditTextView
+import CodeEditLanguages
 
 extension SourceEditor {
     @MainActor
@@ -23,10 +24,15 @@ extension SourceEditor {
 
         private var cancellables: Set<AnyCancellable> = []
 
-        init(text: TextAPI, editorState: Binding<SourceEditorState>, highlightProviders: [any HighlightProviding]?) {
+        init(
+            text: TextAPI,
+            editorState: Binding<SourceEditorState>,
+            highlightProviders: [any HighlightProviding]?,
+            catalog: LanguageCatalog
+        ) {
             self.text = text
             self._editorState = editorState
-            self.highlightProviders = highlightProviders ?? [TreeSitterClient()]
+            self.highlightProviders = highlightProviders ?? [TreeSitterClient(catalog: catalog)]
             super.init()
         }
 

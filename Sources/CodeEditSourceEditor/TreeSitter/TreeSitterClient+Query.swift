@@ -14,7 +14,7 @@ import SwiftTreeSitter
 
 extension TreeSitterClient {
     public struct NodeResult {
-        let id: TreeSitterLanguage
+        let id: LanguageID
         let language: Language
         public let node: Node
     }
@@ -48,7 +48,7 @@ extension TreeSitterClient {
     }
 
     public struct QueryResult {
-        let id: TreeSitterLanguage
+        let id: LanguageID
         let cursor: ResolvingQueryMatchSequence<QueryCursor>
     }
 
@@ -110,7 +110,7 @@ extension TreeSitterClient {
     ///   - query: The query to perform.
     ///   - matchingLanguages: A set of languages to limit the query to. Leave empty to not filter out any layers.
     /// - Returns: Any matching nodes from the query.
-    public func query(_ query: Query, matchingLanguages: Set<TreeSitterLanguage> = []) throws -> [QueryResult] {
+    public func query(_ query: Query, matchingLanguages: Set<LanguageID> = []) throws -> [QueryResult] {
         try executor.execSync({
             guard let readCallback = self.readCallback else { return [] }
             var result: [QueryResult] = []
@@ -131,7 +131,7 @@ extension TreeSitterClient {
     ///   - query: The query to perform.
     ///   - matchingLanguages: A set of languages to limit the query to. Leave empty to not filter out any layers.
     /// - Returns: Any matching nodes from the query.
-    public func query(_ query: Query, matchingLanguages: Set<TreeSitterLanguage> = []) async throws -> [QueryResult] {
+    public func query(_ query: Query, matchingLanguages: Set<LanguageID> = []) async throws -> [QueryResult] {
         try await executor.exec {
             guard let readCallback = self.readCallback else { return [] }
             var result: [QueryResult] = []

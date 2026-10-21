@@ -119,7 +119,7 @@ public class TextViewController: NSViewController {
         didSet {
             // Setting the same language re-parses the whole document and flashes (attributes are cleared then
             // re-applied). Only react to genuine language changes.
-            if language.id != oldValue.id {
+            if language.id != oldValue.id || language.fingerprint != oldValue.fingerprint {
                 highlighter?.setLanguage(language: language)
             }
             setUpTextFormation()
@@ -384,7 +384,8 @@ public class TextViewController: NSViewController {
         language: CodeLanguage,
         configuration: SourceEditorConfiguration,
         cursorPositions: [CursorPosition],
-        highlightProviders: [HighlightProviding] = [TreeSitterClient()],
+        highlightProviders: [HighlightProviding]? = nil,
+        catalog: LanguageCatalog = .builtIn,
         foldProvider: LineFoldProvider? = nil,
         undoManager: CEUndoManager? = nil,
         coordinators: [TextViewCoordinator] = [],
@@ -402,7 +403,8 @@ public class TextViewController: NSViewController {
         self.language = language
         self.configuration = configuration
         self.cursorPositions = cursorPositions
-        self.highlightProviders = highlightProviders
+        let resolvedProviders = highlightProviders ?? [TreeSitterClient(catalog: catalog)]
+        self.highlightProviders = resolvedProviders
         self.foldProvider = foldProvider ?? LineIndentationFoldProvider()
         self._undoManager = undoManager
         self.invisibleCharactersCoordinator = InvisibleCharactersCoordinator(configuration: configuration)
@@ -462,8 +464,8 @@ public class TextViewController: NSViewController {
         documentHighlightModel.controller = self
         suggestionTriggerModel.controller = self
 
-        if let idx = highlightProviders.firstIndex(where: { $0 is TreeSitterClient }),
-           let client = highlightProviders[idx] as? TreeSitterClient {
+        if let idx = resolvedProviders.firstIndex(where: { $0 is TreeSitterClient }),
+           let client = resolvedProviders[idx] as? TreeSitterClient {
             self.treeSitterClient = client
         }
 

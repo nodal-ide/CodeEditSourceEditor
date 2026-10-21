@@ -3,8 +3,8 @@ import CodeEditLanguages
 
 /// Identifies an injected zone independently of the ranges it currently occupies.
 struct ZoneKey: Hashable {
-    let parent: TreeSitterLanguage
-    let language: TreeSitterLanguage
+    let parent: LanguageID
+    let language: LanguageID
     let sourceKey: String
 }
 

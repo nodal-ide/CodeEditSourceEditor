@@ -54,7 +54,12 @@ public final class TreeSitterClient: HighlightProviding {
     /// Optional flag to force every operation to be done on the caller's thread.
     package var forceSyncOperation: Bool = false
 
-    public init() { }
+    /// The language catalog used for the primary language and injected zones.
+    public let catalog: LanguageCatalog
+
+    public init(catalog: LanguageCatalog = .builtIn) {
+        self.catalog = catalog
+    }
 
     // MARK: - Constants
 
@@ -133,6 +138,7 @@ public final class TreeSitterClient: HighlightProviding {
         let operation = { [weak self] in
             let state = TreeSitterState(
                 codeLanguage: codeLanguage,
+                catalog: self?.catalog ?? .builtIn,
                 readCallback: snapshotReadCallback,
                 readBlock: snapshotReadBlock
             )

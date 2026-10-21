@@ -28,12 +28,11 @@ extension TextViewController {
 
     /// Returns a `TextualIndenter` based on available language configuration.
     private func getTextIndenter() -> TextualIndenter {
-        switch language.id {
-        case .python:
+        if language.id == .python {
             return TextualIndenter(patterns: TextualIndenter.pythonPatterns)
-        case .ruby:
+        } else if language.id == .ruby {
             return TextualIndenter(patterns: TextualIndenter.rubyPatterns)
-        default:
+        } else {
             return TextualIndenter(patterns: TextualIndenter.basicPatterns)
         }
     }

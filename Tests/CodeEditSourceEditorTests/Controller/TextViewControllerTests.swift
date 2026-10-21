@@ -4,6 +4,7 @@ import SwiftTreeSitter
 import AppKit
 import SwiftUI
 import TextStory
+import CodeEditLanguages
 
 // swiftlint:disable:next type_body_length
 final class TextViewControllerTests: XCTestCase {
@@ -452,6 +453,42 @@ final class TextViewControllerTests: XCTestCase {
         XCTAssertEqual(controller.cursorPositions[1].range.length, 0)
         XCTAssertEqual(controller.cursorPositions[1].start.line, 3)
         XCTAssertEqual(controller.cursorPositions[1].start.column, 1)
+    }
+
+    // MARK: - Language Fingerprints
+
+    @MainActor
+    func test_languageFingerprintChangeReinitializesProvider() {
+        var setUpCount = 0
+        let provider = Mock.highlightProvider(
+            onSetUp: { _ in setUpCount += 1 },
+            onApplyEdit: { _, _, _ in .success(IndexSet()) },
+            onQueryHighlightsFor: { _, _ in .success([]) }
+        )
+        let controller = TextViewController(
+            string: "",
+            language: .php,
+            configuration: Mock.config(),
+            cursorPositions: [],
+            highlightProviders: [provider]
+        )
+        controller.loadView()
+
+        let original = CodeLanguage.php
+        let changed = CodeLanguage(
+            id: original.id,
+            tsName: original.tsName,
+            extensions: original.extensions,
+            lineCommentString: original.lineCommentString,
+            rangeCommentStrings: original.rangeCommentStrings,
+            grammar: GrammarReference(identifier: "php-next"),
+            parentURL: original.parentQueryURL,
+            highlights: original.additionalHighlights,
+            additionalIdentifiers: original.additionalIdentifiers
+        )
+
+        controller.language = changed
+        XCTAssertEqual(setUpCount, 2)
     }
 
     // MARK: - TreeSitterClient

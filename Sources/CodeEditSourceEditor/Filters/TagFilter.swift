@@ -138,7 +138,7 @@ struct TagFilter: Filter {
     /// - Returns: A query to execute on a tree sitter tree, finding all matching nodes.
     private func tagQuery(
         _ language: Language,
-        id: TreeSitterLanguage,
+        id: LanguageID,
         tagName: String,
         opening: Bool,
         openingTagId: String?
@@ -158,15 +158,15 @@ struct TagFilter: Filter {
     ///   - opening: True, if querying the opening tag.
     ///   - openingTag: The ID of the original opening tag.
     /// - Returns: The node ID for the given language and whether or not it's an opening or closing tag.
-    private func tagId(for id: TreeSitterLanguage, opening: Bool, openingTag: String?) throws -> String {
-        switch id {
-        case .html:
+    private func tagId(for id: LanguageID, opening: Bool, openingTag: String?) throws -> String {
+        switch id.treeSitterLanguage {
+        case .some(.html):
             if opening {
                 return "start_tag"
             } else {
                 return "end_tag"
             }
-        case .jsx, .tsx:
+        case .some(.jsx), .some(.tsx):
             if opening {
                 // Opening tag, match the given opening tag.
                 return openingTag ?? (id == .jsx ? "jsx_opening_element" : "tsx_opening_element")
@@ -190,11 +190,11 @@ struct TagFilter: Filter {
     ///   - id: The language to get the ID for.
     ///   - opening: True, if querying the opening tag.
     /// - Returns: A set of possible node IDs for the language.
-    private func tagIds(for id: TreeSitterLanguage, opening: Bool) throws -> Set<String> {
-        switch id {
-        case .html:
+    private func tagIds(for id: LanguageID, opening: Bool) throws -> Set<String> {
+        switch id.treeSitterLanguage {
+        case .some(.html):
             return [opening ? "start_tag" : "end_tag"]
-        case .jsx, .tsx:
+        case .some(.jsx), .some(.tsx):
             return [
                 opening ? "jsx_opening_element" : "jsx_closing_element",
                 opening ? "tsx_opening_element" : "tsx_closing_element"
@@ -207,11 +207,11 @@ struct TagFilter: Filter {
     /// Get the name of the node that contains the tag's name.
     /// - Parameter id: The language to get the name for.
     /// - Returns: The node ID for a node that contains the tag's name.
-    private func tagNameId(for id: TreeSitterLanguage) throws -> String {
-        switch id {
-        case .html:
+    private func tagNameId(for id: LanguageID) throws -> String {
+        switch id.treeSitterLanguage {
+        case .some(.html):
             return "tag_name"
-        case .jsx, .tsx:
+        case .some(.jsx), .some(.tsx):
             return "identifier"
         default:
             throw Self.Error.invalidLanguage
