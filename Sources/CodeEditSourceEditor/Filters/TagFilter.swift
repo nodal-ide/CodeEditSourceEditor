@@ -228,7 +228,15 @@ struct TagFilter: Filter {
         in interface: TextInterface
     ) throws -> (String, TreeSitterClient.NodeResult)? {
         let prevCharRange = NSRange(location: mutation.range.location - 1, length: 1)
-        let nodesAtLocation = try treeSitterClient.nodesAt(location: mutation.range.location - 1)
+        let location = mutation.range.location - 1
+        let nodesAtLocation: [TreeSitterClient.NodeResult]
+
+        if let deepestNode = treeSitterClient.deepestNode(at: location) {
+            nodesAtLocation = [deepestNode]
+        } else {
+            nodesAtLocation = try treeSitterClient.nodesAt(location: location)
+        }
+
         var foundStartTag: (String, TreeSitterClient.NodeResult)?
 
         for result in nodesAtLocation {

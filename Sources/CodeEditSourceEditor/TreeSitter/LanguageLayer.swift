@@ -38,7 +38,9 @@ public class LanguageLayer: Hashable {
         supportsInjections: Bool,
         tree: MutableTree? = nil,
         languageQuery: Query? = nil,
-        ranges: [NSRange]
+        ranges: [NSRange],
+        zoneKey: ZoneKey? = nil,
+        depth: Int = 0
     ) {
         self.id = id
         self.tsLanguage = tsLanguage
@@ -47,6 +49,8 @@ public class LanguageLayer: Hashable {
         self.tree = tree
         self.languageQuery = languageQuery
         self.ranges = ranges
+        self.zoneKey = zoneKey
+        self.depth = depth
 
         self.parser.timeout = TreeSitterClient.Constants.parserTimeout
     }
@@ -58,6 +62,12 @@ public class LanguageLayer: Hashable {
     var tree: MutableTree?
     var languageQuery: Query?
     var ranges: [NSRange]
+    let zoneKey: ZoneKey?
+    let depth: Int
+
+    var sourceKey: String? {
+        zoneKey?.sourceKey
+    }
 
     func copy() -> LanguageLayer {
         return LanguageLayer(
@@ -67,17 +77,19 @@ public class LanguageLayer: Hashable {
             supportsInjections: supportsInjections,
             tree: tree?.mutableCopy(),
             languageQuery: languageQuery,
-            ranges: ranges
+            ranges: ranges,
+            zoneKey: zoneKey,
+            depth: depth
         )
     }
 
     public static func == (lhs: LanguageLayer, rhs: LanguageLayer) -> Bool {
-        return lhs.id == rhs.id && lhs.ranges == rhs.ranges
+        lhs.id == rhs.id && lhs.zoneKey == rhs.zoneKey
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-        hasher.combine(ranges)
+        hasher.combine(zoneKey)
     }
 
     /// Calculates a series of ranges that have been invalidated by a given edit.

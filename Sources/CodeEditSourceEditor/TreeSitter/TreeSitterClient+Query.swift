@@ -27,6 +27,26 @@ extension TreeSitterClient {
         try? nodesAt(location: location)
     }
 
+    /// Returns the node in the deepest injected zone at the given location.
+    ///
+    /// Returns `nil` when the location is covered by the primary layer rather than an injected zone.
+    func deepestNode(at location: Int) -> NodeResult? {
+        try? executor.execSync {
+            guard let state = self.state,
+                  let span = state.zoneIndex.deepestSpan(at: location),
+                  let language = span.layer.tsLanguage,
+                  let node = span.layer.tree?.rootNode?.descendant(
+                    in: NSRange(location: location, length: 1).tsRange.bytes
+                  )
+            else {
+                return nil
+            }
+
+            return NodeResult(id: span.layer.id, language: language, node: node)
+        }
+        .throwOrReturn()
+    }
+
     public struct QueryResult {
         let id: TreeSitterLanguage
         let cursor: ResolvingQueryMatchSequence<QueryCursor>

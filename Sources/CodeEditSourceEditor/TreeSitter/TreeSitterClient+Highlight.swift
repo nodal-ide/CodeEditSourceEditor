@@ -14,33 +14,45 @@ extension TreeSitterClient {
         guard let state = self.state else { return [] }
 
         var highlights: [HighlightRange] = []
-        var injectedSet = IndexSet(integersIn: range)
+        var covered = IndexSet()
         var layersVisited = 0
         var intersections = 0
 
-        for layer in state.layers where layer.id != state.primaryLayer.id {
+        // Deepest spans win. Query each uncovered part of the span so nested languages override their parents
+        // without scanning every layer and every range in the document.
+        for span in state.zoneIndex.spans(intersecting: range) {
             layersVisited += 1
-            // Query injected only if a layer's ranges intersects with `range`
-            for layerRange in layer.ranges {
-                if let rangeIntersection = range.intersection(layerRange) {
-                    intersections += 1
-                    let queryResult = queryLayerHighlights(
-                        layer: layer,
-                        range: rangeIntersection
-                    )
 
-                    highlights.append(contentsOf: queryResult)
-                    injectedSet.remove(integersIn: rangeIntersection)
-                }
+            guard let intersection = range.intersection(span.range) else {
+                continue
             }
+
+            var uncovered = IndexSet(integersIn: intersection)
+            uncovered.subtract(covered)
+            guard !uncovered.isEmpty else {
+                continue
+            }
+
+            for queryRange in uncovered.rangeView {
+                intersections += 1
+                highlights.append(contentsOf: queryLayerHighlights(
+                    layer: span.layer,
+                    range: NSRange(queryRange)
+                ))
+            }
+
+            covered.formUnion(IndexSet(integersIn: intersection))
         }
 
         // Query primary for any ranges that weren't used in the injected layers.
-        for range in injectedSet.rangeView {
+        var primaryRanges = IndexSet(integersIn: range)
+        primaryRanges.subtract(covered)
+
+        for primaryRange in primaryRanges.rangeView {
             intersections += 1
             let queryResult = queryLayerHighlights(
                 layer: state.layers[0],
-                range: NSRange(range)
+                range: NSRange(primaryRange)
             )
             highlights.append(contentsOf: queryResult)
         }

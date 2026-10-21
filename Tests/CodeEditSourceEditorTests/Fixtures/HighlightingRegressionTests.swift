@@ -44,13 +44,11 @@ final class HighlightingRegressionTests: XCTestCase {
                 && NSMaxRange($0.range) >= divLocation + 3
         }
 
-        XCTExpectFailure("PHP injections-text is pending HP2 coalescing.", strict: true) {
-            XCTAssertTrue(hasHTMLTag, "Expected the HTML div tag to be highlighted inside PHP")
-        }
+        XCTAssertTrue(hasHTMLTag, "Expected the HTML div tag to be highlighted inside PHP")
     }
 
     @MainActor
-    func test_markdownInlineRangesAreNotCoalescedYet() {
+    func test_markdownInlineRangesAreCoalesced() {
         let (client, _) = makeClient(
             text: HighlightingFixtures.multipleMarkdownInlineIslands,
             language: .markdown
@@ -59,13 +57,135 @@ final class HighlightingRegressionTests: XCTestCase {
         let inlineLayers = client.state?.layers.filter { $0.id == .markdownInline } ?? []
         let rangeCount = inlineLayers.reduce(0) { $0 + $1.ranges.count }
 
-        XCTAssertFalse(inlineLayers.isEmpty, "Expected markdown inline injection layers")
-        XCTAssertGreaterThan(rangeCount, 0, "Expected markdown inline injection ranges")
+        XCTAssertEqual(inlineLayers.count, 1, "Expected one coalesced markdown inline layer")
+        XCTAssertGreaterThanOrEqual(rangeCount, 2, "Expected multiple inline ranges in the zone")
+    }
 
-        XCTExpectFailure("Injected ranges are coalesced in HP2.", strict: true) {
-            XCTAssertEqual(inlineLayers.count, 1, "Expected one coalesced markdown inline layer")
-            XCTAssertGreaterThanOrEqual(rangeCount, 2)
+    @MainActor
+    func test_editInsidePHPHTMLKeepsCoalescedZones() {
+        let text = HighlightingFixtures.mixedPHPHTML
+        let (client, textView) = makeClient(text: text, language: .php)
+        let divLocation = (text as NSString).range(of: "<div").location + 4
+        let editExpectation = expectation(description: "HTML edit completes")
+
+        performEdit(
+            textView: textView,
+            client: client,
+            string: " class=\"edited\"",
+            range: NSRange(location: divLocation, length: 0)
+        ) { result in
+            if case .success = result {
+                editExpectation.fulfill()
+            } else {
+                XCTFail("HTML edit failed")
+            }
         }
+        wait(for: [editExpectation], timeout: 5.0)
+
+        let htmlLayers = client.state?.layers.filter { $0.id == .html } ?? []
+        XCTAssertEqual(htmlLayers.count, 1, "Editing HTML must keep a single coalesced HTML zone")
+
+        let editedText = textView.string
+        let highlights = client.queryHighlightsForRange(
+            range: NSRange(location: 0, length: (editedText as NSString).length)
+        )
+        XCTAssertTrue(
+            highlights.contains { $0.capture == .tag && editedText.substring(with: $0.range) == "div" },
+            "Expected HTML tags to remain highlighted after an edit"
+        )
+    }
+
+    @MainActor
+    func test_phpHTMLCSSAndJavaScriptZonesHighlight() {
+        let text = HighlightingFixtures.mixedPHPHTML
+        let (client, _) = makeClient(text: text, language: .php)
+        let documentRange = NSRange(location: 0, length: (text as NSString).length)
+        let highlights = client.queryHighlightsForRange(range: documentRange)
+
+        let htmlLayers = client.state?.layers.filter { $0.id == .html } ?? []
+        let cssLayers = client.state?.layers.filter { $0.id == .css } ?? []
+        let jsLayers = client.state?.layers.filter { $0.id == .javascript } ?? []
+
+        XCTAssertEqual(htmlLayers.count, 1, "Expected one coalesced HTML zone")
+        XCTAssertEqual(cssLayers.count, 1, "Expected one CSS zone")
+        XCTAssertEqual(jsLayers.count, 1, "Expected one JavaScript zone")
+        XCTAssertGreaterThanOrEqual(htmlLayers.first?.ranges.count ?? 0, 2)
+
+        XCTAssertTrue(
+            highlights.contains { $0.capture == .property && text.substring(with: $0.range) == "color" },
+            "Expected the CSS color property to be highlighted"
+        )
+        XCTAssertTrue(
+            highlights.contains { $0.capture == .keyword && text.substring(with: $0.range) == "const" },
+            "Expected the JavaScript const keyword to be highlighted"
+        )
+    }
+
+    @MainActor
+    func test_multiplePHPIslandsShareOneHTMLZone() {
+        let (client, _) = makeClient(
+            text: HighlightingFixtures.multiplePHPHTMLIslands,
+            language: .php
+        )
+
+        let htmlLayers = client.state?.layers.filter { $0.id == .html } ?? []
+        let rangeCount = htmlLayers.reduce(0) { $0 + $1.ranges.count }
+
+        XCTAssertEqual(htmlLayers.count, 1, "Expected one HTML zone for every PHP text island")
+        XCTAssertGreaterThanOrEqual(rangeCount, 2, "Expected multiple coalesced HTML ranges")
+    }
+
+    @MainActor
+    func test_nestedHTMLZonesCreateCSSAndJavaScriptZones() {
+        let text = HighlightingFixtures.nestedZones
+        let (client, _) = makeClient(text: text, language: .html)
+
+        let cssLayers = client.state?.layers.filter { $0.id == .css } ?? []
+        let jsLayers = client.state?.layers.filter { $0.id == .javascript } ?? []
+
+        XCTAssertEqual(cssLayers.count, 1, "Expected the HTML style element to create one CSS zone")
+        XCTAssertEqual(jsLayers.count, 1, "Expected the HTML script element to create one JavaScript zone")
+        XCTAssertEqual(cssLayers.first?.depth, 1)
+        XCTAssertEqual(jsLayers.first?.depth, 1)
+
+        let importLocation = (text as NSString).range(of: "import").location
+        XCTAssertEqual(
+            client.state?.zoneIndex.deepestSpan(at: importLocation)?.layer.id,
+            .javascript,
+            "Expected the zone index to select the nested JavaScript zone"
+        )
+    }
+
+    @MainActor
+    func test_largeMixedPHPVisibleChunkVisitsFewZones() {
+        HighlightingMetrics.shared.reset()
+
+        let fixture = HighlightingFixtures.largeMixedPHP()
+        let (client, _) = makeClient(text: fixture, language: .php)
+        _ = client.queryHighlightsForRange(
+            range: NSRange(location: 0, length: min(4000, (fixture as NSString).length))
+        )
+
+        let metrics = HighlightingMetrics.shared.current
+        XCTAssertGreaterThan(metrics.layersVisited, 0)
+        XCTAssertLessThan(metrics.layersVisited, 20, "A visible chunk must not scan every zone")
+    }
+
+    @MainActor
+    func test_largeMixedPHPUsesOneZonePerLanguage() {
+        let fixture = HighlightingFixtures.largeMixedPHP()
+        let (client, _) = makeClient(text: fixture, language: .php)
+
+        let htmlLayers = client.state?.layers.filter { $0.id == .html } ?? []
+        let cssLayers = client.state?.layers.filter { $0.id == .css } ?? []
+        let jsLayers = client.state?.layers.filter { $0.id == .javascript } ?? []
+
+        XCTAssertEqual(htmlLayers.count, 1, "Every PHP text island should share one HTML zone")
+        XCTAssertEqual(cssLayers.count, 1, "Every style element should share one CSS zone")
+        XCTAssertEqual(jsLayers.count, 1, "Every script element should share one JavaScript zone")
+        XCTAssertGreaterThan(htmlLayers.first?.ranges.count ?? 0, 100)
+        XCTAssertGreaterThan(cssLayers.first?.ranges.count ?? 0, 100)
+        XCTAssertGreaterThan(jsLayers.first?.ranges.count ?? 0, 100)
     }
 
     @MainActor
@@ -142,5 +262,11 @@ final class HighlightingRegressionTests: XCTestCase {
 
         XCTAssertEqual(islandCount, 300)
         XCTAssertGreaterThan(fixture.utf8.count, 900_000)
+    }
+}
+
+private extension String {
+    func substring(with range: NSRange) -> String {
+        (self as NSString).substring(with: range)
     }
 }

@@ -13,6 +13,9 @@ import CodeEditLanguages
 public final class TreeSitterState {
     private(set) var primaryLayer: CodeLanguage
     private(set) var layers: [LanguageLayer] = []
+    private(set) var zoneIndex = ZoneIndex()
+
+    private static let maximumZoneDepth = 8
 
     // MARK: - Init
 
@@ -35,6 +38,7 @@ public final class TreeSitterState {
     private init(codeLanguage: CodeLanguage, layers: [LanguageLayer]) {
         self.primaryLayer = codeLanguage
         self.layers = layers
+        rebuildZoneIndex()
     }
 
     /// Creates a copy of the current state.
@@ -65,8 +69,12 @@ public final class TreeSitterState {
             )
         ]
 
-        guard let treeSitterLanguage = codeLanguage.language else { return }
+        guard let treeSitterLanguage = codeLanguage.language else {
+            rebuildZoneIndex()
+            return
+        }
         try? layers[0].parser.setLanguage(treeSitterLanguage)
+        rebuildZoneIndex()
     }
 
     /// Performs the initial document parse for the primary layer.
@@ -80,22 +88,24 @@ public final class TreeSitterState {
         layers[0].parser.timeout = 0.0
         layers[0].tree = layers[0].parser.parse(tree: nil as Tree?, readBlock: readBlock)
 
-        var layerSet = Set<LanguageLayer>(arrayLiteral: layers[0])
+        var layersByKey = existingLayersByKey()
         var touchedLayers = Set<LanguageLayer>()
 
+        // Use a while loop because `updateInjectedLanguageLayer` can add to `layers` during the loop.
         var idx = 0
         while idx < layers.count {
             updateInjectedLanguageLayer(
                 readCallback: readCallback,
                 readBlock: readBlock,
                 layer: layers[idx],
-                layerSet: &layerSet,
+                layersByKey: &layersByKey,
                 touchedLayers: &touchedLayers
             )
 
             idx += 1
         }
 
+        rebuildZoneIndex()
         recordDebugStateMetrics()
     }
 
@@ -112,12 +122,14 @@ public final class TreeSitterState {
     /// - Parameter idx: The index of the layer to remove.
     public func removeLanguageLayer(at idx: Int) {
         layers.remove(at: idx)
+        rebuildZoneIndex()
     }
 
-    /// Removes all languagel ayers in the given set.
+    /// Removes all language layers in the given set.
     /// - Parameter set: A set of all language layers to remove.
     public func removeLanguageLayers(in set: Set<LanguageLayer>) {
         layers.removeAll(where: { set.contains($0) })
+        rebuildZoneIndex()
     }
 
     /// Attempts to create a language layer and load a highlights file.
@@ -125,9 +137,15 @@ public final class TreeSitterState {
     /// - Parameters:
     ///   - layerId: A language ID to add as a layer.
     ///   - readBlock: Completion called for efficient string lookup.
+    ///   - parent: The layer this layer was injected into.
+    ///   - sourceKey: The query or contribution that produced this layer.
+    ///   - ranges: The initial ranges owned by this layer.
     public func addLanguageLayer(
         layerId: TreeSitterLanguage,
-        readBlock: @escaping Parser.ReadBlock
+        readBlock: @escaping Parser.ReadBlock,
+        parent: LanguageLayer? = nil,
+        sourceKey: String? = nil,
+        ranges: [NSRange] = []
     ) -> LanguageLayer? {
         guard let language = CodeLanguage.languageForID(layerId),
               let parserLanguage = language.language
@@ -135,6 +153,9 @@ public final class TreeSitterState {
             return nil
         }
 
+        let zoneKey = parent.map {
+            ZoneKey(parent: $0.id, language: layerId, sourceKey: sourceKey ?? "injections")
+        }
         let newLayer = LanguageLayer(
             id: layerId,
             tsLanguage: language.language,
@@ -142,7 +163,9 @@ public final class TreeSitterState {
             supportsInjections: language.additionalHighlights?.contains("injections") ?? false,
             tree: nil,
             languageQuery: TreeSitterModel.shared.query(for: layerId),
-            ranges: []
+            ranges: ranges,
+            zoneKey: zoneKey,
+            depth: (parent?.depth ?? -1) + 1
         )
 
         do {
@@ -151,7 +174,13 @@ public final class TreeSitterState {
             return nil
         }
 
+        newLayer.parser.includedRanges = ranges.map { $0.tsRange }
+        if !ranges.isEmpty {
+            newLayer.tree = newLayer.parser.parse(tree: nil as Tree?, readBlock: readBlock)
+        }
+
         layers.append(newLayer)
+        rebuildZoneIndex()
         return newLayer
     }
 
@@ -170,7 +199,7 @@ public final class TreeSitterState {
         readBlock: @escaping Parser.ReadBlock,
         touchedLayers: Set<LanguageLayer>
     ) -> IndexSet {
-        var layerSet = Set(layers)
+        var layersByKey = existingLayersByKey()
         var touchedLayers = touchedLayers
         var rangeSet = IndexSet()
 
@@ -186,7 +215,7 @@ public final class TreeSitterState {
                         readCallback: readCallback,
                         readBlock: readBlock,
                         layer: layer,
-                        layerSet: &layerSet,
+                        layersByKey: &layersByKey,
                         touchedLayers: &touchedLayers
                     )
                 )
@@ -197,6 +226,7 @@ public final class TreeSitterState {
 
         // Delete any layers that weren't touched at some point during the edit.
         removeLanguageLayers(in: touchedLayers)
+        rebuildZoneIndex()
 
         recordDebugStateMetrics()
 
@@ -209,17 +239,15 @@ public final class TreeSitterState {
     ///   - readCallback: Callback used to read text for a specific range.
     ///   - readBlock: Callback used to read blocks of text.
     ///   - layer: The language layer to perform the query on.
-    ///   - layerSet: The set of layers that exist in the document.
-    ///               Used for efficient lookup of existing `(language, range)` pairs
-    ///   - touchedLayers: The set of layers that existed before updating injected layers.
-    ///                    Will have items removed as they are found.
+    ///   - layersByKey: Existing layers keyed by their stable zone identity.
+    ///   - touchedLayers: The set of layers that existed before this update. Existing layers are removed from it.
     /// - Returns: An index set of any updated indexes.
     @discardableResult
     private func updateInjectedLanguageLayer(
         readCallback: @escaping SwiftTreeSitter.Predicate.TextProvider,
         readBlock: @escaping Parser.ReadBlock,
         layer: LanguageLayer,
-        layerSet: inout Set<LanguageLayer>,
+        layersByKey: inout [ZoneKey: LanguageLayer],
         touchedLayers: inout Set<LanguageLayer>
     ) -> IndexSet {
         guard let tree = layer.tree,
@@ -234,45 +262,54 @@ public final class TreeSitterState {
         HighlightingMetrics.shared.recordInjectionQuery()
         #endif
 
-        let languageRanges = self.injectedLanguagesFrom(cursor: cursor) { range, point in
+        let injectionGroups = self.injectedLanguagesFrom(cursor: cursor) { range, point in
             return readCallback(range, point)
         }
 
         var updatedRanges = IndexSet()
 
-        for (languageName, ranges) in languageRanges {
-            guard let treeSitterLanguage = TreeSitterLanguage.fromInjectionName(languageName) else {
+        for (group, ranges) in injectionGroups {
+            guard let treeSitterLanguage = TreeSitterLanguage.fromInjectionName(group.languageName) else {
                 continue
             }
 
-            if treeSitterLanguage == primaryLayer.id {
+            guard layer.depth < Self.maximumZoneDepth,
+                  !createsCycle(from: layer, injecting: treeSitterLanguage)
+            else {
                 continue
             }
 
-            for range in ranges {
-                // Temp layer object
-                let layer = LanguageLayer(
-                    id: treeSitterLanguage,
-                    tsLanguage: nil,
-                    parser: Parser(),
-                    supportsInjections: false,
-                    ranges: [range.range]
-                )
+            let zoneKey = ZoneKey(
+                parent: layer.id,
+                language: treeSitterLanguage,
+                sourceKey: group.sourceKey
+            )
+            let coalescedRanges = coalescedRanges(ranges)
 
-                if layerSet.contains(layer) {
-                    // If we've found this layer, it means it should exist after an edit.
-                    touchedLayers.remove(layer)
-                } else {
-                    // New range, make a new layer!
-                    if let addedLayer = addLanguageLayer(layerId: treeSitterLanguage, readBlock: readBlock) {
-                        addedLayer.ranges = [range.range]
-                        addedLayer.parser.includedRanges = addedLayer.ranges.map { $0.tsRange }
-                        addedLayer.tree = addedLayer.parser.parse(tree: nil as Tree?, readBlock: readBlock)
+            guard !coalescedRanges.isEmpty else {
+                continue
+            }
 
-                        layerSet.insert(addedLayer)
-                        updatedRanges.insert(range: range.range)
-                    }
+            if let existingLayer = layersByKey[zoneKey] {
+                touchedLayers.remove(existingLayer)
+
+                if existingLayer.ranges != coalescedRanges {
+                    updatedRanges.formUnion(indexSet(ranges: existingLayer.ranges))
+                    updatedRanges.formUnion(indexSet(ranges: coalescedRanges))
+
+                    existingLayer.ranges = coalescedRanges
+                    existingLayer.parser.includedRanges = coalescedRanges.map { $0.tsRange }
+                    existingLayer.tree = existingLayer.parser.parse(tree: nil as Tree?, readBlock: readBlock)
                 }
+            } else if let addedLayer = addLanguageLayer(
+                layerId: treeSitterLanguage,
+                readBlock: readBlock,
+                parent: layer,
+                sourceKey: group.sourceKey,
+                ranges: coalescedRanges
+            ) {
+                layersByKey[zoneKey] = addedLayer
+                updatedRanges.formUnion(indexSet(ranges: coalescedRanges))
             }
         }
 
@@ -284,22 +321,82 @@ public final class TreeSitterState {
     /// - Parameters:
     ///   - cursor: The cursor to use for finding injected languages.
     ///   - textProvider: A callback for efficiently fetching text.
-    /// - Returns: A map of each language to all the ranges they have been injected into.
+    /// - Returns: A map of each language/source pair to all the ranges injected by it.
     private func injectedLanguagesFrom(
         cursor: QueryCursor,
         textProvider: @escaping SwiftTreeSitter.Predicate.TextProvider
-    ) -> [String: [NamedRange]] {
-        var languages: [String: [NamedRange]] = [:]
+    ) -> [InjectionGroup: [NamedRange]] {
+        var languages: [InjectionGroup: [NamedRange]] = [:]
 
         for match in cursor {
-            if let injection = match.injection(with: textProvider) {
-                if languages[injection.name] == nil {
-                    languages[injection.name] = []
-                }
-                languages[injection.name]?.append(injection)
+            guard let injection = match.injection(with: textProvider) else {
+                continue
             }
+
+            let sourceKey = match.metadata["injection.combined"] != nil
+                ? "injections:combined"
+                : "injections:pattern:\(match.patternIndex)"
+            let group = InjectionGroup(languageName: injection.name, sourceKey: sourceKey)
+            languages[group, default: []].append(injection)
         }
 
         return languages
+    }
+
+    private struct InjectionGroup: Hashable {
+        let languageName: String
+        let sourceKey: String
+    }
+
+    // MARK: - Zone Management
+
+    private func existingLayersByKey() -> [ZoneKey: LanguageLayer] {
+        var result: [ZoneKey: LanguageLayer] = [:]
+        for layer in layers {
+            if let key = layer.zoneKey {
+                result[key] = layer
+            }
+        }
+        return result
+    }
+
+    private func rebuildZoneIndex() {
+        zoneIndex.rebuild(layers: layers)
+    }
+
+    private func coalescedRanges(_ ranges: [NamedRange]) -> [NSRange] {
+        var indexSet = IndexSet()
+        for range in ranges {
+            indexSet.insert(integersIn: range.range)
+        }
+        return indexSet.rangeView.map { NSRange($0) }.filter { $0.length > 0 }
+    }
+
+    private func indexSet(ranges: [NSRange]) -> IndexSet {
+        var result = IndexSet()
+        for range in ranges {
+            result.insert(integersIn: range)
+        }
+        return result
+    }
+
+    private func createsCycle(from layer: LanguageLayer, injecting language: TreeSitterLanguage) -> Bool {
+        if language == primaryLayer.id || language == layer.id {
+            return true
+        }
+
+        var current: LanguageLayer? = layer
+        var visited = Set<TreeSitterLanguage>()
+
+        while let currentLayer = current, let key = currentLayer.zoneKey {
+            if !visited.insert(currentLayer.id).inserted || key.parent == language {
+                return true
+            }
+            current = layers.first {
+                $0.zoneKey != nil && $0.id == key.parent && $0.depth == currentLayer.depth - 1
+            }
+        }
+
+        return false
     }
 }
