@@ -6,15 +6,28 @@
 import Foundation
 
 /// Information to display in a hover tooltip.
-public struct HoverInfo {
-    /// The text shown in the tooltip. Plain text; may contain line breaks.
-    public let contents: String
+public struct HoverInfo: Equatable {
+    /// The structured content shown in the tooltip.
+    public let content: HoverContent
     /// Optional range to keep emphasized while hovering.
     public let range: NSRange?
 
-    public init(contents: String, range: NSRange? = nil) {
-        self.contents = contents
+    /// A plain-text representation of ``content``.
+    ///
+    /// This remains available for compatibility with existing providers and renderers. New code
+    /// should use ``content`` directly so rich formatting is preserved.
+    public var contents: String {
+        content.plainText
+    }
+
+    public init(content: HoverContent, range: NSRange? = nil) {
+        self.content = content
         self.range = range
+    }
+
+    /// Creates plain-text hover information.
+    public init(contents: String, range: NSRange? = nil) {
+        self.init(content: .plainText(contents), range: range)
     }
 }
 
