@@ -53,6 +53,17 @@ final class TreeSitterClientTests: XCTestCase {
         XCTAssertEqual(layerCount, 1, "Client set up too many layers")
     }
 
+    @MainActor
+    func test_injectionAliasCreatesMarkdownInlineLayer() {
+        let client = Mock.treeSitterClient(forceSync: true)
+        let textView = Mock.textView()
+        textView.setText("# Heading\n\n**bold** and `code`\n")
+        client.setUp(textView: textView, codeLanguage: .markdown)
+
+        let layerIDs = Set(client.state?.layers.map(\.id) ?? [])
+        XCTAssertTrue(layerIDs.contains(.markdownInline), "Expected the markdown_inline alias to create a layer")
+    }
+
     func resultIsCancel<T>(_ result: Result<T, Error>) -> Bool {
         if case let .failure(error) = result {
             if case HighlightProvidingError.operationCancelled = error {

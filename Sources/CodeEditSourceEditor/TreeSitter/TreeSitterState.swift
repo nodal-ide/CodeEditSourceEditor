@@ -120,7 +120,7 @@ public final class TreeSitterState {
         layerId: TreeSitterLanguage,
         readBlock: @escaping Parser.ReadBlock
     ) -> LanguageLayer? {
-        guard let language = CodeLanguage.allLanguages.first(where: { $0.id == layerId }),
+        guard let language = CodeLanguage.languageForID(layerId),
               let parserLanguage = language.language
         else {
             return nil
@@ -226,7 +226,7 @@ public final class TreeSitterState {
         var updatedRanges = IndexSet()
 
         for (languageName, ranges) in languageRanges {
-            guard let treeSitterLanguage = TreeSitterLanguage(rawValue: languageName) else {
+            guard let treeSitterLanguage = TreeSitterLanguage.fromInjectionName(languageName) else {
                 continue
             }
 

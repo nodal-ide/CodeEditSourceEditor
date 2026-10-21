@@ -233,6 +233,33 @@ final class HighlighterTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func test_newProviderUsesCurrentLanguageAfterLanguageChange() {
+        let firstProvider = MockHighlightProvider()
+        let textView = Mock.textView()
+        textView.frame = NSRect(x: 0, y: 0, width: 1000, height: 1000)
+        textView.setText("<?php echo 1;")
+
+        let highlighter = Mock.highlighter(
+            textView: textView,
+            highlightProviders: [firstProvider],
+            attributeProvider: attributeProvider,
+            language: .swift
+        )
+
+        var setupLanguage: CodeLanguage?
+        let newProvider = Mock.highlightProvider(
+            onSetUp: { setupLanguage = $0 },
+            onApplyEdit: { _, _, _ in .success([]) },
+            onQueryHighlightsFor: { _, _ in .success([]) }
+        )
+
+        highlighter.setLanguage(language: .php)
+        highlighter.setProviders([firstProvider, newProvider])
+
+        XCTAssertEqual(setupLanguage?.id, .php)
+    }
+
     // This test isn't testing much highlighter functionality. However, we've seen crashes and other errors after normal
     // editing that were caused by the highlighter and would only have been caught by an integration test like this.
     @MainActor

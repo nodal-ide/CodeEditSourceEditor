@@ -245,19 +245,6 @@ enum HoverMarkdownRenderer {
 
 /// Applies syntax highlighting to hover code when a theme and language are available.
 enum HoverCodeStyler {
-    private static let aliases: [String: String] = [
-        "c#": "csharp",
-        "c++": "cpp",
-        "js": "javascript",
-        "md": "markdown",
-        "py": "python",
-        "rb": "ruby",
-        "sh": "bash",
-        "shell": "bash",
-        "ts": "typescript",
-        "yml": "yaml"
-    ]
-
     static func attributedString(
         text: String,
         languageHint: String?,
@@ -311,12 +298,6 @@ enum HoverCodeStyler {
             .map(String.init)?
             .lowercased()
         guard let raw, !raw.isEmpty else { return nil }
-        let normalized = aliases[raw] ?? raw
-
-        return CodeLanguage.allLanguages.first {
-            $0.tsName.lowercased() == normalized
-                || $0.extensions.contains(normalized)
-                || $0.additionalIdentifiers.contains(normalized)
-        }
+        return CodeLanguage.languageForIdentifier(raw)
     }
 }

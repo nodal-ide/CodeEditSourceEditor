@@ -130,6 +130,8 @@ class Highlighter: NSObject {
     /// Sets the language and causes a re-highlight of the entire text.
     /// - Parameter language: The language to update to.
     public func setLanguage(language: CodeLanguage) {
+        self.language = language
+
         guard let textView = self.textView else { return }
 
         // Remove all current highlights. Makes the language setting feel snappier and tells the user we're doing
