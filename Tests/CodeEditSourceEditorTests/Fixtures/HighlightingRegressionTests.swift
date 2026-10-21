@@ -96,6 +96,100 @@ final class HighlightingRegressionTests: XCTestCase {
     }
 
     @MainActor
+    func test_insertingStyleCreatesNestedCSSZone() {
+        let fixture = HighlightingFixtures.multiplePHPHTMLIslands
+        let (client, textView) = makeClient(text: fixture, language: .php)
+        let sectionEnd = NSMaxRange((fixture as NSString).range(of: "<section class=\"one\">"))
+        let editExpectation = expectation(description: "Style insertion completes")
+
+        performEdit(
+            textView: textView,
+            client: client,
+            string: "\n<style>.added { color: blue; }</style>",
+            range: NSRange(location: sectionEnd, length: 0)
+        ) { result in
+            if case .success = result {
+                editExpectation.fulfill()
+            } else {
+                XCTFail("Style insertion failed")
+            }
+        }
+        wait(for: [editExpectation], timeout: 5.0)
+
+        let cssLayers = client.state?.layers.filter { $0.id == .css } ?? []
+        XCTAssertEqual(cssLayers.count, 1, "Expected the new style element to create a CSS zone")
+
+        let editedText = textView.string
+        let highlights = client.queryHighlightsForRange(
+            range: NSRange(location: 0, length: (editedText as NSString).length)
+        )
+        XCTAssertTrue(
+            highlights.contains { $0.capture == .property && editedText.substring(with: $0.range) == "color" },
+            "Expected the newly inserted CSS to be highlighted"
+        )
+    }
+
+    @MainActor
+    func test_removingStyleRemovesCSSZone() {
+        let fixture = HighlightingFixtures.mixedPHPHTML
+        let (client, textView) = makeClient(text: fixture, language: .php)
+        let styleStart = (fixture as NSString).range(of: "<style>").location
+        let styleEnd = NSMaxRange((fixture as NSString).range(of: "</style>"))
+        XCTAssertNotEqual(styleStart, NSNotFound)
+        let styleRange = NSRange(location: styleStart, length: styleEnd - styleStart)
+
+        let editExpectation = expectation(description: "Style deletion completes")
+        performEdit(
+            textView: textView,
+            client: client,
+            string: "",
+            range: styleRange
+        ) { result in
+            if case .success = result {
+                editExpectation.fulfill()
+            } else {
+                XCTFail("Style deletion failed")
+            }
+        }
+        wait(for: [editExpectation], timeout: 5.0)
+
+        let cssLayers = client.state?.layers.filter { $0.id == .css } ?? []
+        XCTAssertTrue(cssLayers.isEmpty, "Expected the removed style element to remove its CSS zone")
+    }
+
+    @MainActor
+    func test_editingOneIslandParsesOnlyDirtyLayers() {
+        let fixture = HighlightingFixtures.largeMixedPHP()
+        let (client, textView) = makeClient(text: fixture, language: .php)
+        let layerCount = client.state?.layers.count ?? 0
+        HighlightingMetrics.shared.reset()
+
+        let scriptLocation = (fixture as NSString).range(of: "const value0").location + 6
+        let editExpectation = expectation(description: "JS island edit completes")
+
+        performEdit(
+            textView: textView,
+            client: client,
+            string: "x",
+            range: NSRange(location: scriptLocation, length: 0)
+        ) { result in
+            if case .success = result {
+                editExpectation.fulfill()
+            } else {
+                XCTFail("JS island edit failed")
+            }
+        }
+        wait(for: [editExpectation], timeout: 10.0)
+
+        let metrics = HighlightingMetrics.shared.current
+        XCTAssertGreaterThan(metrics.dirtyLayers, 0)
+        XCTAssertGreaterThan(metrics.parsedLayers, 0)
+        XCTAssertLessThan(metrics.dirtyLayers, layerCount, "Editing one island must not mark every zone dirty")
+        XCTAssertLessThan(metrics.parsedLayers, layerCount, "Editing one island must not parse every zone")
+        XCTAssertLessThanOrEqual(metrics.injectionQueries, 4)
+    }
+
+    @MainActor
     func test_phpHTMLCSSAndJavaScriptZonesHighlight() {
         let text = HighlightingFixtures.mixedPHPHTML
         let (client, _) = makeClient(text: text, language: .php)
@@ -219,6 +313,8 @@ final class HighlightingRegressionTests: XCTestCase {
         XCTAssertGreaterThan(metrics.highlightQueryIntersections, 0)
         XCTAssertGreaterThan(metrics.injectionQueries, 0)
         XCTAssertGreaterThan(metrics.invalidatedRanges, 0)
+        XCTAssertGreaterThan(metrics.dirtyLayers, 0)
+        XCTAssertGreaterThan(metrics.parsedLayers, 0)
         XCTAssertGreaterThanOrEqual(metrics.maxLayerCount, 2)
         XCTAssertGreaterThan(metrics.maxRangeCount, 0)
     }

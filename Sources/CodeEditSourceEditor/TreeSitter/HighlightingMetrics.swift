@@ -7,6 +7,9 @@ final class HighlightingMetrics: @unchecked Sendable {
         var highlightQueries = 0
         var highlightQueryIntersections = 0
         var invalidatedRanges = 0
+        var dirtyLayers = 0
+        var dirtyRanges = 0
+        var parsedLayers = 0
         var maxLayerCount = 0
         var maxRangeCount = 0
     }
@@ -53,5 +56,13 @@ final class HighlightingMetrics: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         snapshot.invalidatedRanges += count
+    }
+
+    func recordEdit(dirtyLayers: Int, dirtyRanges: Int, parsedLayers: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        snapshot.dirtyLayers += dirtyLayers
+        snapshot.dirtyRanges += dirtyRanges
+        snapshot.parsedLayers += parsedLayers
     }
 }

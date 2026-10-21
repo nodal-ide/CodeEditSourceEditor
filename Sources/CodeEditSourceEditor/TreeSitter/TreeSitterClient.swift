@@ -68,6 +68,9 @@ public final class TreeSitterClient: HighlightProviding {
         /// And: [github.com/helix-editor](https://github.com/helix-editor/helix/pull/4830)
         public static var matchLimit = 256
 
+        /// Extra characters queried around an edited injection range so boundary nodes and language captures are seen.
+        static var injectionQueryPadding = 256
+
         /// The timeout for parsers to re-check if a task is canceled. This constant represents the period between
         /// checks and is directly related to editor responsiveness.
         public static var parserTimeout: TimeInterval = 0.05
@@ -166,7 +169,7 @@ public final class TreeSitterClient: HighlightProviding {
         }
 
         let operation = { [weak self] in
-            return self?.applyEdit(edit: edit) ?? IndexSet()
+            return self?.applyEdit(edit: edit, range: range) ?? IndexSet()
         }
 
         let longEdit = range.length > Constants.maxSyncEditLength
