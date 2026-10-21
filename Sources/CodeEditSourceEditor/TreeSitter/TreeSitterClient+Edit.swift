@@ -65,6 +65,10 @@ extension TreeSitterClient {
             edits = []
         }
 
+        #if DEBUG
+        HighlightingMetrics.shared.recordInvalidatedRanges(invalidatedRanges.count)
+        #endif
+
         return invalidatedRanges
     }
 

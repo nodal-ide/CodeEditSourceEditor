@@ -95,6 +95,15 @@ public final class TreeSitterState {
 
             idx += 1
         }
+
+        recordDebugStateMetrics()
+    }
+
+    private func recordDebugStateMetrics() {
+        #if DEBUG
+        let rangeCount = layers.reduce(0) { $0 + $1.ranges.count }
+        HighlightingMetrics.shared.recordState(layerCount: layers.count, rangeCount: rangeCount)
+        #endif
     }
 
     // MARK: - Layer Management
@@ -189,6 +198,8 @@ public final class TreeSitterState {
         // Delete any layers that weren't touched at some point during the edit.
         removeLanguageLayers(in: touchedLayers)
 
+        recordDebugStateMetrics()
+
         return rangeSet
     }
 
@@ -218,6 +229,10 @@ public final class TreeSitterState {
         }
 
         cursor.matchLimit = TreeSitterClient.Constants.matchLimit
+
+        #if DEBUG
+        HighlightingMetrics.shared.recordInjectionQuery()
+        #endif
 
         let languageRanges = self.injectedLanguagesFrom(cursor: cursor) { range, point in
             return readCallback(range, point)

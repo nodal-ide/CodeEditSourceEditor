@@ -15,11 +15,15 @@ extension TreeSitterClient {
 
         var highlights: [HighlightRange] = []
         var injectedSet = IndexSet(integersIn: range)
+        var layersVisited = 0
+        var intersections = 0
 
         for layer in state.layers where layer.id != state.primaryLayer.id {
+            layersVisited += 1
             // Query injected only if a layer's ranges intersects with `range`
             for layerRange in layer.ranges {
                 if let rangeIntersection = range.intersection(layerRange) {
+                    intersections += 1
                     let queryResult = queryLayerHighlights(
                         layer: layer,
                         range: rangeIntersection
@@ -33,12 +37,20 @@ extension TreeSitterClient {
 
         // Query primary for any ranges that weren't used in the injected layers.
         for range in injectedSet.rangeView {
+            intersections += 1
             let queryResult = queryLayerHighlights(
                 layer: state.layers[0],
                 range: NSRange(range)
             )
             highlights.append(contentsOf: queryResult)
         }
+
+        #if DEBUG
+        HighlightingMetrics.shared.recordHighlightQuery(
+            layersVisited: layersVisited,
+            intersections: intersections
+        )
+        #endif
 
         return highlights
     }
