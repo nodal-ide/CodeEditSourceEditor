@@ -46,6 +46,28 @@ final class TextViewControllerTests: XCTestCase {
         XCTAssertEqual(color4, NSColor.textColor)
     }
 
+    func test_extendedCaptureNames() {
+        let cases: [(String, NSColor)] = [
+            ("constant", NSColor.systemOrange),
+            ("constant.builtin", NSColor.systemOrange),
+            ("character", NSColor.systemRed),
+            ("string.escape", NSColor.systemRed),
+            ("operator", NSColor.systemTeal),
+            ("function.builtin", NSColor.systemBlue),
+            ("function.method", NSColor.systemBlue),
+            ("property.definition", NSColor.systemCyan),
+            ("type.builtin", NSColor.systemMint),
+            ("attribute", NSColor.systemTeal),
+            ("namespace", NSColor.systemMint),
+            ("comment.doc", NSColor.systemGreen)
+        ]
+
+        for (name, expected) in cases {
+            let color = controller.attributesFor(CaptureName.fromString(name))[.foregroundColor] as? NSColor
+            XCTAssertEqual(color, expected, "Unexpected color for \(name)")
+        }
+    }
+
     // MARK: Overscroll
 
     func test_editorOverScroll() throws {

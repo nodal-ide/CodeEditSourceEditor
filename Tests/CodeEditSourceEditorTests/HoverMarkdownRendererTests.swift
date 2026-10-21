@@ -99,6 +99,20 @@ final class HoverMarkdownRendererTests: XCTestCase {
         XCTAssertTrue(attributed.string.contains("    let value = 1"))
     }
 
+    func testFencedCodeAppliesThemeFallbackStyleToEveryRun() {
+        let attributed = render("```php\n<?php $value = charge();\n```")
+        let fullRange = NSRange(location: 0, length: attributed.length)
+        var runCount = 0
+
+        attributed.enumerateAttributes(in: fullRange, options: []) { attributes, range, _ in
+            runCount += 1
+            XCTAssertNotNil(attributes[.foregroundColor], "Missing foreground color at \(range)")
+            XCTAssertNotNil(attributes[.font], "Missing font at \(range)")
+        }
+
+        XCTAssertGreaterThan(runCount, 0)
+    }
+
     func testLanguageAliasesResolve() {
         XCTAssertEqual(HoverCodeStyler.language(for: "php")?.id, .php)
         XCTAssertEqual(HoverCodeStyler.language(for: "js")?.id, .javascript)

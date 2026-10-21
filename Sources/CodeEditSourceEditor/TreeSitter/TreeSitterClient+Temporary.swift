@@ -51,7 +51,13 @@ extension TreeSitterClient {
                     return HighlightRange(range: range, capture: captureName)
                 }
 
-            let string = NSMutableAttributedString(string: string)
+            let string = NSMutableAttributedString(
+                string: string,
+                attributes: [
+                    .font: font,
+                    .foregroundColor: theme.text.color
+                ]
+            )
 
             for highlight in highlights {
                 string.setAttributes(

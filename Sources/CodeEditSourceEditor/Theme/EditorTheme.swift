@@ -78,24 +78,41 @@ public struct EditorTheme: Equatable {
         self.comments = comments
     }
 
+    private static let captureStyles: [CaptureName: KeyPath<EditorTheme, Attribute>] = [
+        .include: \.keywords,
+        .constructor: \.keywords,
+        .keyword: \.keywords,
+        .boolean: \.keywords,
+        .repeat: \.keywords,
+        .conditional: \.keywords,
+        .tag: \.keywords,
+        .variableBuiltin: \.keywords,
+        .keywordReturn: \.keywords,
+        .keywordFunction: \.keywords,
+        .comment: \.comments,
+        .variable: \.variables,
+        .property: \.variables,
+        .parameter: \.variables,
+        .function: \.commands,
+        .method: \.commands,
+        .number: \.numbers,
+        .float: \.numbers,
+        .string: \.strings,
+        .character: \.characters,
+        .type: \.types,
+        .typeAlternate: \.attributes,
+        .constant: \.values,
+        .operator: \.attributes
+    ]
+
     /// Maps a capture type to the attributes for that capture determined by the theme.
     /// - Parameter capture: The capture to map to.
     /// - Returns: Theme attributes for the capture.
     private func mapCapture(_ capture: CaptureName?) -> Attribute {
-        switch capture {
-        case .include, .constructor, .keyword, .boolean, .variableBuiltin,
-                .keywordReturn, .keywordFunction, .repeat, .conditional, .tag:
-            return keywords
-        case .comment: return comments
-        case .variable, .property: return variables
-        case .function, .method: return variables
-        case .number, .float: return numbers
-        case .string: return strings
-        case .type: return types
-        case .parameter: return variables
-        case .typeAlternate: return attributes
-        default: return text
+        guard let capture, let style = Self.captureStyles[capture] else {
+            return text
         }
+        return self[keyPath: style]
     }
 
     /// Get the color from ``theme`` for the specified capture name.
