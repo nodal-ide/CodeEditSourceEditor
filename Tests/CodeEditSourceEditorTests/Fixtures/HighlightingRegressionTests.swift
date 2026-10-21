@@ -186,7 +186,63 @@ final class HighlightingRegressionTests: XCTestCase {
         XCTAssertGreaterThan(metrics.parsedLayers, 0)
         XCTAssertLessThan(metrics.dirtyLayers, layerCount, "Editing one island must not mark every zone dirty")
         XCTAssertLessThan(metrics.parsedLayers, layerCount, "Editing one island must not parse every zone")
-        XCTAssertLessThanOrEqual(metrics.injectionQueries, 4)
+        XCTAssertLessThanOrEqual(
+            metrics.injectionQueries,
+            HighlightingFixtures.Thresholds.maxInjectionQueriesPerEdit
+        )
+    }
+
+    @MainActor
+    func test_scrollingVisibleChunksStayBounded() {
+        let fixture = HighlightingFixtures.largeMixedPHP()
+        let (client, _) = makeClient(text: fixture, language: .php)
+        let length = (fixture as NSString).length
+
+        for fraction in HighlightingFixtures.Thresholds.scrollOffsets {
+            HighlightingMetrics.shared.reset()
+            let location = min(max(0, Int(Double(length) * fraction)), max(0, length - 1))
+            let visibleLength = min(
+                HighlightingFixtures.Thresholds.visibleChunkLength,
+                length - location
+            )
+            _ = client.queryHighlightsForRange(
+                range: NSRange(location: location, length: visibleLength)
+            )
+
+            let metrics = HighlightingMetrics.shared.current
+            XCTAssertEqual(metrics.highlightQueries, 1)
+            XCTAssertGreaterThan(metrics.layersVisited, 0)
+            XCTAssertLessThan(
+                metrics.layersVisited,
+                HighlightingFixtures.Thresholds.maxVisibleLayers,
+                "Scroll chunk at \(fraction) must not scan every zone"
+            )
+            XCTAssertLessThan(
+                metrics.highlightQueryIntersections,
+                HighlightingFixtures.Thresholds.maxVisibleIntersections,
+                "Scroll chunk at \(fraction) must stay proportional to visible zones"
+            )
+        }
+    }
+
+    @MainActor
+    func test_languageChangeRemovesStaleZones() {
+        let (client, textView) = makeClient(
+            text: HighlightingFixtures.mixedPHPHTML,
+            language: .php
+        )
+        XCTAssertTrue(client.state?.layers.contains { $0.id == .html } ?? false)
+
+        let swiftText = "func value() -> Int { 42 }"
+        textView.setText(swiftText)
+        client.setUp(textView: textView, codeLanguage: .swift)
+
+        let state = client.state
+        XCTAssertEqual(state?.primaryLayer.id, .swift)
+        XCTAssertTrue(
+            state?.layers.allSatisfy { $0.id == .swift && $0.depth == 0 } ?? false,
+            "Changing language must discard every zone from the previous language"
+        )
     }
 
     @MainActor
@@ -257,12 +313,19 @@ final class HighlightingRegressionTests: XCTestCase {
         let fixture = HighlightingFixtures.largeMixedPHP()
         let (client, _) = makeClient(text: fixture, language: .php)
         _ = client.queryHighlightsForRange(
-            range: NSRange(location: 0, length: min(4000, (fixture as NSString).length))
+            range: NSRange(
+                location: 0,
+                length: min(HighlightingFixtures.Thresholds.visibleChunkLength, (fixture as NSString).length)
+            )
         )
 
         let metrics = HighlightingMetrics.shared.current
         XCTAssertGreaterThan(metrics.layersVisited, 0)
-        XCTAssertLessThan(metrics.layersVisited, 20, "A visible chunk must not scan every zone")
+        XCTAssertLessThan(
+            metrics.layersVisited,
+            HighlightingFixtures.Thresholds.maxVisibleLayers,
+            "A visible chunk must not scan every zone"
+        )
     }
 
     @MainActor
@@ -328,10 +391,31 @@ final class HighlightingRegressionTests: XCTestCase {
         let (client, textView) = makeClient(text: text, language: .php)
         let openDuration = openStart.duration(to: clock.now)
 
-        let queryRange = NSRange(location: 0, length: min(4000, (text as NSString).length))
+        let queryRange = NSRange(
+            location: 0,
+            length: min(HighlightingFixtures.Thresholds.visibleChunkLength, (text as NSString).length)
+        )
         let queryStart = clock.now
         _ = client.queryHighlightsForRange(range: queryRange)
         let queryDuration = queryStart.duration(to: clock.now)
+
+        let scrollStart = clock.now
+        for fraction in HighlightingFixtures.Thresholds.scrollOffsets {
+            let location = min(
+                Int(Double((text as NSString).length) * fraction),
+                (text as NSString).length - 1
+            )
+            _ = client.queryHighlightsForRange(
+                range: NSRange(
+                    location: location,
+                    length: min(
+                        HighlightingFixtures.Thresholds.visibleChunkLength,
+                        (text as NSString).length - location
+                    )
+                )
+            )
+        }
+        let scrollDuration = scrollStart.duration(to: clock.now)
 
         let editRange = NSRange(location: (text as NSString).length / 2, length: 0)
         let editExpectation = expectation(description: "Baseline edit completes")
@@ -346,9 +430,15 @@ final class HighlightingRegressionTests: XCTestCase {
         wait(for: [editExpectation], timeout: 10.0)
         let editDuration = editStart.duration(to: clock.now)
 
+        let languageStart = clock.now
+        textView.setText("func value() -> Int { 42 }")
+        client.setUp(textView: textView, codeLanguage: .swift)
+        let languageDuration = languageStart.duration(to: clock.now)
+
         print(
-            "HP0 baseline largeMixedPHP bytes=\(text.utf8.count) "
-                + "open=\(openDuration) query=\(queryDuration) edit=\(editDuration)"
+            "HP5 baseline largeMixedPHP bytes=\(text.utf8.count) "
+                + "open=\(openDuration) query=\(queryDuration) scroll=\(scrollDuration) "
+                + "edit=\(editDuration) languageChange=\(languageDuration)"
         )
     }
 

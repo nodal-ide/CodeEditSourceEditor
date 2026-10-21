@@ -1,6 +1,14 @@
 import Foundation
 
 enum HighlightingFixtures {
+    enum Thresholds {
+        static let visibleChunkLength = 4000
+        static let maxVisibleLayers = 20
+        static let maxVisibleIntersections = 400
+        static let maxInjectionQueriesPerEdit = 4
+        static let scrollOffsets = [0.0, 0.25, 0.5, 0.75, 0.99]
+    }
+
     static let purePHP = """
     <?php
 

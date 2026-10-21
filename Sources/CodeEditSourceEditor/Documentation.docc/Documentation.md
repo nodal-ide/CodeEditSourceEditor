@@ -45,6 +45,10 @@ Licensed under the [MIT license](https://github.com/CodeEditApp/CodeEdit/blob/ma
 
 - ``EditorTheme``
 
+### Performance
+
+- <doc:HighlightingPerformance>
+
 ### Text Coordinators
 
 - <doc:TextViewCoordinators>
