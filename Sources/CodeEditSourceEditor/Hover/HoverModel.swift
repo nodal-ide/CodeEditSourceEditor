@@ -67,7 +67,7 @@ final class HoverModel {
             currentRange = diagnostic.range
             let windowRect = textView.convert(rect, to: nil)
             HoverController.shared.show(
-                contents: Self.contents(for: diagnostic),
+                content: Self.content(for: diagnostic),
                 anchorRect: windowRect,
                 in: window
             )
@@ -86,18 +86,51 @@ final class HoverModel {
         let rects = textView.layoutManager.rectsFor(range: range)
         guard let firstRect = rects.first else { return }
         let windowRect = textView.convert(firstRect, to: nil)
-        HoverController.shared.show(contents: info.contents, anchorRect: windowRect, in: window)
+        HoverController.shared.show(content: info.content, anchorRect: windowRect, in: window)
     }
 
-    private static func contents(for diagnostic: EditorDiagnostic) -> String {
+    private static func content(for diagnostic: EditorDiagnostic) -> HoverContent {
         let title: String
+        let tone: HoverTone
+        let symbol: String
         switch diagnostic.severity {
-        case .error: title = "Error"
-        case .warning: title = "Warning"
-        case .info: title = "Info"
-        case .hint: title = "Hint"
+        case .error:
+            title = "Error"
+            tone = .error
+            symbol = "xmark.octagon.fill"
+        case .warning:
+            title = "Warning"
+            tone = .warning
+            symbol = "exclamationmark.triangle.fill"
+        case .info:
+            title = "Info"
+            tone = .info
+            symbol = "info.circle.fill"
+        case .hint:
+            title = "Hint"
+            tone = .info
+            symbol = "lightbulb.fill"
         }
-        return "\(title): \(diagnostic.message)"
+
+        var subtitleParts: [String] = []
+        if let line = diagnostic.line {
+            subtitleParts.append("Line \(line)")
+        }
+        if let ruleID = diagnostic.ruleID, !ruleID.isEmpty {
+            subtitleParts.append(ruleID)
+        }
+
+        return .document(HoverDocument(
+            header: HoverHeader(
+                title: title,
+                subtitle: subtitleParts.isEmpty ? nil : subtitleParts.joined(separator: " · "),
+                systemImageName: symbol,
+                tone: tone
+            ),
+            blocks: [
+                .notice(HoverNotice(message: diagnostic.message, tone: tone))
+            ]
+        ))
     }
 
     private func identifierRange(at location: Int) async -> NSRange? {
