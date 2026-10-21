@@ -28,8 +28,12 @@ final class HoverCardView: NSVisualEffectView {
         let hasContent: Bool
     }
 
-    init(content: HoverContent, maxWidth: CGFloat = HoverCardView.maxWidth) {
-        let layout = Self.layout(for: content, maxWidth: maxWidth)
+    init(
+        content: HoverContent,
+        theme: EditorTheme? = nil,
+        maxWidth: CGFloat = HoverCardView.maxWidth
+    ) {
+        let layout = Self.layout(for: content, theme: theme, maxWidth: maxWidth)
         self.preferredSize = layout.size
 
         super.init(frame: NSRect(origin: .zero, size: layout.size))
@@ -82,7 +86,11 @@ final class HoverCardView: NSVisualEffectView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private static func layout(for content: HoverContent, maxWidth: CGFloat) -> Layout {
+    private static func layout(
+        for content: HoverContent,
+        theme: EditorTheme?,
+        maxWidth: CGFloat
+    ) -> Layout {
         let header: HoverHeader?
         let blocks: [HoverBlock]
         let attributedContent: NSAttributedString
@@ -91,17 +99,17 @@ final class HoverCardView: NSVisualEffectView {
         case .plainText, .markdown:
             header = nil
             blocks = []
-            attributedContent = HoverContentRenderer.attributedString(for: content)
+            attributedContent = HoverContentRenderer.attributedString(for: content, theme: theme)
         case .document(let document):
             header = document.header
             blocks = document.blocks
-            attributedContent = HoverContentRenderer.attributedString(for: blocks)
+            attributedContent = HoverContentRenderer.attributedString(for: blocks, theme: theme)
         }
 
         let headerNaturalWidth = header.map(HoverHeaderView.naturalWidth) ?? 0
         let contentNaturalWidth = blocks.isEmpty
             ? ceil(attributedContent.size().width)
-            : HoverContentRenderer.naturalWidth(for: blocks)
+            : HoverContentRenderer.naturalWidth(for: blocks, theme: theme)
         let naturalWidth = max(headerNaturalWidth, contentNaturalWidth)
         let width = min(maxWidth, max(minWidth, ceil(naturalWidth) + inset * 2))
         let contentWidth = max(1, width - inset * 2)

@@ -15,13 +15,18 @@ final class HoverController {
     private init() {}
 
     /// Shows the card near the given rect (in the parent window's coordinate space).
-    func show(content: HoverContent, anchorRect: NSRect, in parentWindow: NSWindow) {
+    func show(
+        content: HoverContent,
+        theme: EditorTheme? = nil,
+        anchorRect: NSRect,
+        in parentWindow: NSWindow
+    ) {
         guard !content.isEmpty else {
             close()
             return
         }
 
-        let card = HoverCardView(content: content)
+        let card = HoverCardView(content: content, theme: theme)
         let size = card.preferredSize
 
         let panel = NSPanel(

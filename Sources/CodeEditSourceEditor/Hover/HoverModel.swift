@@ -68,6 +68,7 @@ final class HoverModel {
             let windowRect = textView.convert(rect, to: nil)
             HoverController.shared.show(
                 content: Self.content(for: diagnostic),
+                theme: controller.theme,
                 anchorRect: windowRect,
                 in: window
             )
@@ -86,7 +87,12 @@ final class HoverModel {
         let rects = textView.layoutManager.rectsFor(range: range)
         guard let firstRect = rects.first else { return }
         let windowRect = textView.convert(firstRect, to: nil)
-        HoverController.shared.show(content: info.content, anchorRect: windowRect, in: window)
+        HoverController.shared.show(
+            content: info.content,
+            theme: controller.theme,
+            anchorRect: windowRect,
+            in: window
+        )
     }
 
     private static func content(for diagnostic: EditorDiagnostic) -> HoverContent {
