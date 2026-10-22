@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import CodeEditLanguages
 
 /// Severity of a native editor diagnostic.
 public enum EditorDiagnosticSeverity: Int, Codable, Sendable {
@@ -22,19 +23,22 @@ public struct EditorDiagnostic: Sendable {
     public let line: Int?
     /// A stable rule identifier (e.g. `php.complexity`), when the source is rule-based. Used to suppress rules.
     public let ruleID: String?
+    public let languageContext: LanguageZoneContext?
 
     public init(
         range: NSRange,
         severity: EditorDiagnosticSeverity,
         message: String,
         line: Int? = nil,
-        ruleID: String? = nil
+        ruleID: String? = nil,
+        languageContext: LanguageZoneContext? = nil
     ) {
         self.range = range
         self.severity = severity
         self.message = message
         self.line = line
         self.ruleID = ruleID
+        self.languageContext = languageContext
     }
 }
 

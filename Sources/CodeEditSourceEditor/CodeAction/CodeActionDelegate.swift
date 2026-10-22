@@ -30,6 +30,7 @@ public struct CodeActionInfo: CodeSuggestionEntry, Identifiable {
     public var label: String { title }
     public var detail: String? { kind }
     public let kind: String?
+    public let languageContext: LanguageZoneContext?
     public var documentation: String? { nil }
     public var pathComponents: [String]? { nil }
     public var targetPosition: CursorPosition? { nil }
@@ -38,10 +39,16 @@ public struct CodeActionInfo: CodeSuggestionEntry, Identifiable {
     public var imageColor: Color { Color(NSColor.systemYellow) }
     public var deprecated: Bool { false }
 
-    public init(title: String, kind: String? = nil, edits: [CodeActionEdit]) {
+    public init(
+        title: String,
+        kind: String? = nil,
+        edits: [CodeActionEdit],
+        languageContext: LanguageZoneContext? = nil
+    ) {
         self.title = title
         self.kind = kind
         self.edits = edits
+        self.languageContext = languageContext
     }
 }
 
