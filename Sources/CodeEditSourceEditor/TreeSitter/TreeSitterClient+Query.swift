@@ -47,6 +47,21 @@ extension TreeSitterClient {
         .throwOrReturn()
     }
 
+    /// Returns the languages covering a document location, deepest injected language first,
+    /// followed by enclosing languages and the document's root language.
+    public func languageIDs(at location: Int) -> [LanguageID] {
+        (try? executor.execSync {
+            guard let state = self.state else { return [] }
+            var ids = state.zoneIndex
+                .spans(intersecting: NSRange(location: location, length: 1))
+                .map { $0.layer.id }
+            ids.append(state.primaryLayer.id)
+
+            var seen = Set<LanguageID>()
+            return ids.filter { seen.insert($0).inserted }
+        }.throwOrReturn()) ?? []
+    }
+
     public struct QueryResult {
         let id: LanguageID
         let cursor: ResolvingQueryMatchSequence<QueryCursor>

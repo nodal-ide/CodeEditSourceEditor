@@ -341,6 +341,13 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// Returns the language routing order for a document location.
+    /// Falls back to the editor language when no tree-sitter zone index is available.
+    public func languageIDs(at location: Int) -> [LanguageID] {
+        let languageIDs = treeSitterClient?.languageIDs(at: location) ?? []
+        return languageIDs.isEmpty ? [language.id] : languageIDs
+    }
+
     var foldProvider: LineFoldProvider
 
     /// Filters used when applying edits..

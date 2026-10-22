@@ -64,6 +64,19 @@ final class TreeSitterClientTests: XCTestCase {
         XCTAssertTrue(layerIDs.contains(.markdownInline), "Expected the markdown_inline alias to create a layer")
     }
 
+    @MainActor
+    func test_languageIDsAtLocationReturnsDeepestZoneThenRoot() {
+        let client = Mock.treeSitterClient(forceSync: true)
+        let textView = Mock.textView()
+        let source = "# Heading\n\n**bold** and `code`\n"
+        textView.setText(source)
+        client.setUp(textView: textView, codeLanguage: .markdown)
+
+        let location = (source as NSString).range(of: "code").location
+        XCTAssertEqual(client.languageIDs(at: location), [.markdownInline, .markdown])
+        XCTAssertEqual(client.languageIDs(at: 0), [.markdown])
+    }
+
     func resultIsCancel<T>(_ result: Result<T, Error>) -> Bool {
         if case let .failure(error) = result {
             if case HighlightProvidingError.operationCancelled = error {
