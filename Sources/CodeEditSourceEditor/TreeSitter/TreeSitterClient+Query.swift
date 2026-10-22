@@ -50,15 +50,29 @@ extension TreeSitterClient {
     /// Returns the languages covering a document location, deepest injected language first,
     /// followed by enclosing languages and the document's root language.
     public func languageIDs(at location: Int) -> [LanguageID] {
+        var seen = Set<LanguageID>()
+        return languageContexts(at: location)
+            .map(\.languageID)
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// Returns the active language zones at a document location, deepest first, followed by root.
+    public func languageContexts(at location: Int) -> [LanguageZoneContext] {
         (try? executor.execSync {
             guard let state = self.state else { return [] }
-            var ids = state.zoneIndex
+            var contexts = state.zoneIndex
                 .spans(intersecting: NSRange(location: location, length: 1))
-                .map { $0.layer.id }
-            ids.append(state.primaryLayer.id)
-
-            var seen = Set<LanguageID>()
-            return ids.filter { seen.insert($0).inserted }
+                .map { span in
+                    LanguageZoneContext(
+                        languageID: span.layer.id,
+                        parentLanguageID: span.layer.zoneKey?.parent,
+                        sourceKey: span.sourceKey,
+                        depth: span.depth,
+                        range: span.range
+                    )
+                }
+            contexts.append(LanguageZoneContext(languageID: state.primaryLayer.id))
+            return contexts
         }.throwOrReturn()) ?? []
     }
 

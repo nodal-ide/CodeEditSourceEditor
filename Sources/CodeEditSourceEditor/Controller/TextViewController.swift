@@ -344,8 +344,16 @@ public class TextViewController: NSViewController {
     /// Returns the language routing order for a document location.
     /// Falls back to the editor language when no tree-sitter zone index is available.
     public func languageIDs(at location: Int) -> [LanguageID] {
-        let languageIDs = treeSitterClient?.languageIDs(at: location) ?? []
-        return languageIDs.isEmpty ? [language.id] : languageIDs
+        var seen = Set<LanguageID>()
+        return languageContexts(at: location)
+            .map(\.languageID)
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// Returns active injected-zone details, deepest first, followed by the root context.
+    public func languageContexts(at location: Int) -> [LanguageZoneContext] {
+        let contexts = treeSitterClient?.languageContexts(at: location) ?? []
+        return contexts.isEmpty ? [LanguageZoneContext(languageID: language.id)] : contexts
     }
 
     var foldProvider: LineFoldProvider

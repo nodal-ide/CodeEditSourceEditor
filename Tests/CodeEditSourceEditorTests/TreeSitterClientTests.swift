@@ -73,6 +73,10 @@ final class TreeSitterClientTests: XCTestCase {
         client.setUp(textView: textView, codeLanguage: .markdown)
 
         let location = (source as NSString).range(of: "code").location
+        let contexts = client.languageContexts(at: location)
+        XCTAssertEqual(contexts.first?.languageID, .markdownInline)
+        XCTAssertEqual(contexts.first?.depth, 1)
+        XCTAssertNotNil(contexts.first?.sourceKey)
         XCTAssertEqual(client.languageIDs(at: location), [.markdownInline, .markdown])
         XCTAssertEqual(client.languageIDs(at: 0), [.markdown])
     }
