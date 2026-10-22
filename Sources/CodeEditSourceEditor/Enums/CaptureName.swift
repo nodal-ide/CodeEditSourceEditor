@@ -93,6 +93,16 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
 
     private static let ignoredCapturePrefixes = ["_", "punctuation."]
 
+    /// Capture names used by tree-sitter conventions that this highlighter deliberately does not
+    /// render: zone markers (`@injection.*`), concealment and markup metadata. They never map to a
+    /// highlight capture, but they are not mistakes either.
+    private static let conventionalCaptureNames: Set<String> = [
+        "conceal", "embedded", "injection.combined", "injection.content",
+        "injection.filename", "injection.language", "injection.shebang"
+    ]
+
+    private static let conventionalCapturePrefixes = ["injection.", "markup.", "text."]
+
     private static let capturePrefixes: [(prefix: String, capture: CaptureName)] = [
         ("function.method", .method),
         ("function.", .function),
@@ -137,6 +147,23 @@ public enum CaptureName: Int8, CaseIterable, Sendable {
             return capture
         }
         return captureNameForDottedName(name)
+    }
+
+    /// Whether a query capture name is understood by the highlighter.
+    ///
+    /// `true` for highlight captures and for the names the highlighter deliberately ignores
+    /// (`punctuation.*`, `_*`, `spell`, `@injection.*` zone markers, …). Used to tell a pack author
+    /// about a capture that will never do anything, without flagging the standard ignored
+    /// conventions as mistakes.
+    public static func isKnown(_ name: String) -> Bool {
+        if fromString(name) != nil {
+            return true
+        }
+        let lowercased = name.lowercased()
+        return ignoredCaptureNames.contains(lowercased)
+            || ignoredCapturePrefixes.contains { lowercased.hasPrefix($0) }
+            || conventionalCaptureNames.contains(lowercased)
+            || conventionalCapturePrefixes.contains { lowercased.hasPrefix($0) }
     }
 
     private static func captureNameForDottedName(_ name: String) -> CaptureName? {
