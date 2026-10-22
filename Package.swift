@@ -16,15 +16,18 @@ let package = Package(
     dependencies: [
         // A fast, efficient, text view for code.
         .package(
-            path: "../CodeEditTextView"
+            url: "https://github.com/nodal-ide/CodeEditTextView.git",
+            revision: "eb9820c2384ce5f6661d29846a147390f6ff538e"
         ),
         // tree-sitter languages
         .package(
-            path: "../CodeEditLanguages"
+            url: "https://github.com/nodal-ide/CodeEditLanguages.git",
+            revision: "497fc6a7c5c0042bf3c0d2b907be6b145a963364"
         ),
         // CodeEditSymbols
         .package(
-            path: "../CodeEditSymbols"
+            url: "https://github.com/nodal-ide/CodeEditSymbols.git",
+            revision: "247200521218bc1cc0ec962012c407a5ef8460d7"
         ),
         // Rules for indentation, pair completion, whitespace
         .package(
