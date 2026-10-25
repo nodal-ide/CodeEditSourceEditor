@@ -75,7 +75,12 @@ extension TextViewController {
     }
 
     private func setUpTagFilter() {
-        guard let treeSitterClient, language.id.shouldProcessTags() else { return }
+        // `language.id` is a `LanguageID`. The `shouldProcessTags()` method is defined on
+        // `TreeSitterLanguage`, so we need to convert the identifier before checking.
+        guard let treeSitterClient = treeSitterClient,
+              let tsLanguage = language.id.treeSitterLanguage,
+              tsLanguage.shouldProcessTags() else { return }
+
         textFilters.append(TagFilter(
             language: self.language,
             indentOption: configuration.behavior.indentOption,
