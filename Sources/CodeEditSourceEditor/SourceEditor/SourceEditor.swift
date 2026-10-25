@@ -51,6 +51,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         disabledBreakpointLines: Set<Int> = [],
         onToggleBreakpoint: ((Int) -> Void)? = nil,
         onBreakpointMenu: ((Int) -> NSMenu?)? = nil,
+        onContextMenuItems: ((TextViewController, NSEvent) -> [NSMenuItem])? = nil,
         debugLine: Int? = nil
     ) {
         self.text = .binding(text)
@@ -75,6 +76,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.disabledBreakpointLines = disabledBreakpointLines
         self.onToggleBreakpoint = onToggleBreakpoint
         self.onBreakpointMenu = onBreakpointMenu
+        self.onContextMenuItems = onContextMenuItems
         self.debugLine = debugLine
     }
 
@@ -112,6 +114,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         disabledBreakpointLines: Set<Int> = [],
         onToggleBreakpoint: ((Int) -> Void)? = nil,
         onBreakpointMenu: ((Int) -> NSMenu?)? = nil,
+        onContextMenuItems: ((TextViewController, NSEvent) -> [NSMenuItem])? = nil,
         debugLine: Int? = nil
     ) {
         self.text = .storage(text)
@@ -136,6 +139,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         self.disabledBreakpointLines = disabledBreakpointLines
         self.onToggleBreakpoint = onToggleBreakpoint
         self.onBreakpointMenu = onBreakpointMenu
+        self.onContextMenuItems = onContextMenuItems
         self.debugLine = debugLine
     }
 
@@ -161,6 +165,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
     var disabledBreakpointLines: Set<Int> = []
     var onToggleBreakpoint: ((Int) -> Void)?
     var onBreakpointMenu: ((Int) -> NSMenu?)?
+    var onContextMenuItems: ((TextViewController, NSEvent) -> [NSMenuItem])?
     var debugLine: Int?
 
     public typealias NSViewControllerType = TextViewController
@@ -203,6 +208,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.disabledBreakpointLines = disabledBreakpointLines
         controller.onToggleBreakpoint = onToggleBreakpoint
         controller.onBreakpointMenu = onBreakpointMenu
+        controller.onContextMenuItems = onContextMenuItems
         controller.debugLine = debugLine
         controller.pendingRestorationScrollPosition = state.scrollPosition
         context.coordinator.setController(controller)
@@ -228,6 +234,7 @@ public struct SourceEditor: NSViewControllerRepresentable {
         controller.disabledBreakpointLines = disabledBreakpointLines
         controller.onToggleBreakpoint = onToggleBreakpoint
         controller.onBreakpointMenu = onBreakpointMenu
+        controller.onContextMenuItems = onContextMenuItems
         controller.debugLine = debugLine
 
         context.coordinator.updateHighlightProviders(highlightProviders)

@@ -56,6 +56,12 @@ public class TextViewController: NSViewController {
         didSet { gutterView?.onBreakpointMenu = onBreakpointMenu }
     }
 
+    /// Returns additional items for the editor's right-click menu.
+    ///
+    /// Items are appended after the default Cut, Copy, and Paste actions. Return an empty array to leave the menu
+    /// unchanged. The closure receives the controller and triggering event.
+    public var onContextMenuItems: ((TextViewController, NSEvent) -> [NSMenuItem])?
+
     /// The 1-based line of the current debugger stop to highlight, or `nil`.
     public var debugLine: Int? {
         didSet {
@@ -498,6 +504,10 @@ public class TextViewController: NSViewController {
         )
 
         textView.layoutManager.invisibleCharacterDelegate = invisibleCharactersCoordinator
+        textView.contextMenuItemsProvider = { [weak self] event in
+            guard let self else { return [] }
+            return self.onContextMenuItems?(self, event) ?? []
+        }
 
         // Start after `textView` exists so the initial refresh/clear can safely access it.
         documentHighlightModel.start()

@@ -16,8 +16,7 @@ let package = Package(
     dependencies: [
         // A fast, efficient, text view for code.
         .package(
-            url: "https://github.com/nodal-ide/CodeEditTextView.git",
-            revision: "eb9820c2384ce5f6661d29846a147390f6ff538e"
+            path: "../CodeEditTextView"
         ),
         // tree-sitter languages
         .package(

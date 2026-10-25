@@ -1,6 +1,22 @@
 {
   "pins" : [
     {
+      "identity" : "codeeditlanguages",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nodal-ide/CodeEditLanguages.git",
+      "state" : {
+        "revision" : "497fc6a7c5c0042bf3c0d2b907be6b145a963364"
+      }
+    },
+    {
+      "identity" : "codeeditsymbols",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nodal-ide/CodeEditSymbols.git",
+      "state" : {
+        "revision" : "247200521218bc1cc0ec962012c407a5ef8460d7"
+      }
+    },
+    {
       "identity" : "rearrange",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ChimeHQ/Rearrange",
@@ -59,8 +75,32 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter/tree-sitter",
       "state" : {
-        "revision" : "bf655c0beaf4943573543fa77c58e8006ff34971",
-        "version" : "0.25.6"
+        "revision" : "da6fe9beb4f7f67beb75914ca8e0d48ae48d6406",
+        "version" : "0.25.10"
+      }
+    },
+    {
+      "identity" : "tree-sitter-apacheconf",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nodal-ide/tree-sitter-apacheconf.git",
+      "state" : {
+        "revision" : "62447ac088bc86464538fe9ee98c9e7dcd8a9da7"
+      }
+    },
+    {
+      "identity" : "tree-sitter-dotenv",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nodal-ide/tree-sitter-dotenv.git",
+      "state" : {
+        "revision" : "28a07b76b0e1d7f192a819cce1a2b444b609581b"
+      }
+    },
+    {
+      "identity" : "tree-sitter-gitignore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nodal-ide/tree-sitter-gitignore.git",
+      "state" : {
+        "revision" : "3e81ac0449a025fea02282063f127b540b088ebe"
       }
     },
     {

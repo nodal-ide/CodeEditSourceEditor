@@ -69,6 +69,31 @@ final class TextViewControllerTests: XCTestCase {
         }
     }
 
+    // MARK: Context Menu
+
+    func test_contextMenuItemsAreAppended() throws {
+        let event = try XCTUnwrap(NSEvent.mouseEvent(
+            with: .rightMouseDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 0,
+            clickCount: 1,
+            pressure: 1
+        ))
+        controller.onContextMenuItems = { controller, _ in
+            XCTAssertEqual(controller, self.controller)
+            return [NSMenuItem(title: "Ask Assistant", action: nil, keyEquivalent: "")]
+        }
+
+        let menu = try XCTUnwrap(controller.textView.menu(for: event))
+        XCTAssertEqual(menu.items.prefix(3).map(\.title), ["Cut", "Copy", "Paste"])
+        XCTAssertTrue(menu.items[3].isSeparatorItem)
+        XCTAssertEqual(menu.items[4].title, "Ask Assistant")
+    }
+
     // MARK: Overscroll
 
     func test_editorOverScroll() throws {
