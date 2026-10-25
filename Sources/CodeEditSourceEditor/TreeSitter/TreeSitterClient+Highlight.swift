@@ -15,8 +15,9 @@ extension TreeSitterClient {
 
         var highlights: [HighlightRange] = []
         var injectedSet = IndexSet(integersIn: range)
+        let primaryTSLang = state.primaryLayer.id.treeSitterLanguage ?? .plainText
 
-        for layer in state.layers where layer.id != state.primaryLayer.id {
+        for layer in state.layers where layer.id != primaryTSLang {
             // Query injected only if a layer's ranges intersects with `range`
             for layerRange in layer.ranges {
                 if let rangeIntersection = range.intersection(layerRange) {

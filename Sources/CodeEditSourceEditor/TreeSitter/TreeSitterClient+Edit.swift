@@ -29,7 +29,8 @@ extension TreeSitterClient {
         for (idx, layer) in state.layers.enumerated().reversed() {
             if Task.isCancelled { return IndexSet() }
 
-            if layer.id != state.primaryLayer.id {
+            let primaryTSLang = state.primaryLayer.id.treeSitterLanguage ?? .plainText
+if layer.id != primaryTSLang {
                 applyEditTo(layer: layer, edits: edits)
 
                 if layer.ranges.isEmpty {

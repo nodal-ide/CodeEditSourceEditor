@@ -55,7 +55,7 @@ public final class TreeSitterState {
         primaryLayer = codeLanguage
         layers = [
             LanguageLayer(
-                id: codeLanguage.id,
+                id: codeLanguage.id.treeSitterLanguage ?? .plainText,
                 tsLanguage: codeLanguage.language,
                 parser: Parser(),
                 supportsInjections: codeLanguage.additionalHighlights?.contains("injections") ?? false,
@@ -120,7 +120,7 @@ public final class TreeSitterState {
         layerId: TreeSitterLanguage,
         readBlock: @escaping Parser.ReadBlock
     ) -> LanguageLayer? {
-        guard let language = CodeLanguage.allLanguages.first(where: { $0.id == layerId }),
+        guard let language = CodeLanguage.allLanguages.first(where: { $0.id.treeSitterLanguage == layerId }),
               let parserLanguage = language.language
         else {
             return nil
@@ -230,7 +230,7 @@ public final class TreeSitterState {
                 continue
             }
 
-            if treeSitterLanguage == primaryLayer.id {
+            if let primaryTSLang = primaryLayer.id.treeSitterLanguage, treeSitterLanguage == primaryTSLang {
                 continue
             }
 
