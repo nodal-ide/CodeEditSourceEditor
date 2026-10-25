@@ -19,10 +19,7 @@ let package = Package(
             path: "../CodeEditTextView"
         ),
         // tree-sitter languages
-        .package(
-            url: "https://github.com/nodal-ide/CodeEditLanguages.git",
-            revision: "497fc6a7c5c0042bf3c0d2b907be6b145a963364"
-        ),
+        .package(path: "../CodeEditLanguages"),
         // CodeEditSymbols
         .package(
             url: "https://github.com/nodal-ide/CodeEditSymbols.git",
