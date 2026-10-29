@@ -273,15 +273,23 @@ class SuggestionViewController: NSViewController {
     }
 
     func onItemsUpdated() {
-        resetScrollPosition()
+        let anchor = model?.selectionAnchor
+        model?.selectionAnchor = nil
+        if anchor == nil {
+            resetScrollPosition()
+        }
         if let model {
             noItemsLabel.isHidden = !model.items.isEmpty
             scrollView.isHidden = model.items.isEmpty
             previewView.isHidden = model.items.isEmpty
         }
         tableView.reloadData()
-        // Always have a selection so Enter applies something and ↑/↓ have a starting point.
-        if model?.items.isEmpty == false, tableView.numberOfRows > 0 {
+        // Keep the previously selected row across refreshes; otherwise start at the top.
+        if let anchor,
+           let index = model?.items.firstIndex(where: { $0.label == anchor }) {
+            tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+            tableView.scrollRowToVisible(index)
+        } else if model?.items.isEmpty == false, tableView.numberOfRows > 0 {
             tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
         }
         if let activeTextView = model?.activeTextView {

@@ -1,14 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "codeeditlanguages",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/nodal-ide/CodeEditLanguages.git",
-      "state" : {
-        "revision" : "497fc6a7c5c0042bf3c0d2b907be6b145a963364"
-      }
-    },
-    {
       "identity" : "codeeditsymbols",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nodal-ide/CodeEditSymbols.git",

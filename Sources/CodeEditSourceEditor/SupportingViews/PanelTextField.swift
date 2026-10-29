@@ -105,6 +105,11 @@ struct PanelTextField<LeadingAccessories: View, TrailingAccessories: View>: View
                         .lineLimit(1)
                 }
             }
+            // Scoped to the text row so taps on the accessory buttons and toggles stay theirs.
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isFocused = true
+            }
             if clearable == true {
                 Button {
                     self.text = ""
@@ -136,9 +141,5 @@ struct PanelTextField<LeadingAccessories: View, TrailingAccessories: View>: View
                 .disabled(true)
                 .edgesIgnoringSafeArea(.all)
         )
-
-        .onTapGesture {
-            isFocused = true
-        }
     }
 }

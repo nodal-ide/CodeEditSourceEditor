@@ -53,6 +53,11 @@ struct FindPanelTests {
         #expect(model.panelHeight == 54)
     }
 
+    @Test func findPanelIsFrontmostForHitTesting() async throws {
+        // The panel overlaps the editor; it must be the last subview so clicks reach its controls.
+        #expect(viewController.view.subviews.last === viewController.findPanel)
+    }
+
     @Test func findPanelShowsOnCommandF() async throws {
         // Show find panel
         viewController.showFindPanel()

@@ -16,7 +16,15 @@ final class SuggestionViewModel: ObservableObject {
 
     weak var delegate: CodeSuggestionDelegate?
 
-    private var cursorPosition: CursorPosition?
+    /// Row the window should keep selected after a refresh replaced the item list.
+    var selectionAnchor: String?
+    /// Label of the currently selected row, maintained by the window controller.
+    var selectedLabel: String?
+
+    private let session = CompletionSession()
+    private var isWindowShowing = false
+    private var requestGeneration = 0
+
     private var syntaxHighlightedCache: [Int: NSAttributedString] = [:]
 
     func showCompletions(
@@ -28,43 +36,37 @@ final class SuggestionViewModel: ObservableObject {
         self.activeTextView = nil
         self.delegate = nil
         itemsRequestTask?.cancel()
+        session.cancel()
+        session.onRefresh = { [weak self] refined in
+            self?.applyRefreshedItems(refined)
+        }
 
         guard let targetParentWindow = textView.view.window else { return }
 
         self.activeTextView = textView
         self.delegate = delegate
-        itemsRequestTask = Task {
-            defer { itemsRequestTask = nil }
+        self.selectionAnchor = nil
+        self.selectedLabel = nil
+        requestGeneration &+= 1
+        let generation = requestGeneration
 
-            do {
-                guard let completionItems = await delegate.completionSuggestionsRequested(
-                    textView: textView,
-                    cursorPosition: cursorPosition
-                ) else {
-                    return
-                }
-
-                try Task.checkCancellation()
-                try await MainActor.run {
-                    try Task.checkCancellation()
-
-                    guard let cursorPosition = textView.resolveCursorPosition(completionItems.windowPosition),
-                          let cursorRect = textView.textView.layoutManager.rectForOffset(
-                            cursorPosition.range.location
-                          ),
-                          let cursorRect = textView.view.window?.convertToScreen(
-                            textView.textView.convert(cursorRect, to: nil)
-                          ) else {
-                        return
-                    }
-
-                    self.items = completionItems.items
-                    self.syntaxHighlightedCache = [:]
-                    showWindowOnParent(targetParentWindow, cursorRect)
-                }
-            } catch {
+        itemsRequestTask = Task { [weak self] in
+            guard let self else { return }
+            let result = await self.session.open(
+                textView: textView,
+                delegate: delegate,
+                position: cursorPosition
+            )
+            guard self.requestGeneration == generation else { return }
+            self.itemsRequestTask = nil
+            guard let result, !Task.isCancelled else { return }
+            guard let cursorRect = Self.cursorRect(for: textView, at: cursorPosition, in: targetParentWindow) else {
                 return
             }
+            self.items = result.items
+            self.syntaxHighlightedCache = [:]
+            self.isWindowShowing = true
+            showWindowOnParent(targetParentWindow, cursorRect)
         }
     }
 
@@ -81,19 +83,18 @@ final class SuggestionViewModel: ObservableObject {
             return
         }
 
-        guard let newItems = delegate.completionOnCursorMove(
-            textView: textView,
-            cursorPosition: position
-        ),
-              !newItems.isEmpty else {
+        switch session.update(textView: textView, position: position) {
+        case .close:
             close()
-            return
+        case .pending:
+            items = []
+        case .items(let newItems):
+            items = newItems
         }
-
-        items = newItems
     }
 
     func didSelect(item: CodeSuggestionEntry) {
+        selectedLabel = item.label
         delegate?.completionWindowDidSelect(item: item)
     }
 
@@ -110,11 +111,13 @@ final class SuggestionViewModel: ObservableObject {
     }
 
     func willClose() {
-        // Cancel a pending request so it can't re-show the window after the user dismissed it.
         itemsRequestTask?.cancel()
         itemsRequestTask = nil
         items.removeAll()
         activeTextView = nil
+        isWindowShowing = false
+        selectionAnchor = nil
+        session.cancel()
     }
 
     func syntaxHighlights(forIndex index: Int) -> NSAttributedString? {
@@ -137,5 +140,30 @@ final class SuggestionViewModel: ObservableObject {
         }
 
         return nil
+    }
+
+    private func applyRefreshedItems(_ refined: [CodeSuggestionEntry]?) {
+        guard isWindowShowing, activeTextView != nil else { return }
+        guard let refined else {
+            SuggestionController.shared.close()
+            return
+        }
+        guard refined.map(\.label) != items.map(\.label) else { return }
+        selectionAnchor = selectedLabel
+        syntaxHighlightedCache = [:]
+        items = refined
+    }
+
+    private static func cursorRect(
+        for textView: TextViewController,
+        at position: CursorPosition,
+        in parentWindow: NSWindow
+    ) -> NSRect? {
+        guard let resolved = textView.resolveCursorPosition(position),
+              let rect = textView.textView.layoutManager.rectForOffset(resolved.range.location),
+              let converted = textView.view.window?.convertToScreen(textView.textView.convert(rect, to: nil)) else {
+            return nil
+        }
+        return converted
     }
 }

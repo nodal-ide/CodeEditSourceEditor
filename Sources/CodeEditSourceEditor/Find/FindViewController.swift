@@ -56,10 +56,12 @@ final class FindViewController: NSViewController {
         // When visible, it's set to 0.
 
         view.clipsToBounds = false
-        view.addSubview(findPanel)
         view.addSubview(childView)
+        // The panel overlaps the child view, and `NSView` hit-tests subviews back-to-front, so it must be
+        // the last subview. `zPosition` alone only affects drawing and would leave the controls unclickable.
+        view.addSubview(findPanel, positioned: .above, relativeTo: childView)
 
-        // Ensure find panel is always on top
+        // Keep the panel's layers above the text view's drawing on the shared backing layer.
         findPanel.wantsLayer = true
         findPanel.layer?.zPosition = 1000
 

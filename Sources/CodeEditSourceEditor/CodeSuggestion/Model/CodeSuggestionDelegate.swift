@@ -14,6 +14,23 @@ public protocol CodeSuggestionDelegate: AnyObject {
         cursorPosition: CursorPosition
     ) async -> (windowPosition: CursorPosition, items: [CodeSuggestionEntry])?
 
+    /// The full completion result for a session start, including whether the provider has more
+    /// results for a refined query. Defaults to the plain request above.
+    func completionResultRequested(
+        textView: TextViewController,
+        cursorPosition: CursorPosition
+    ) async -> CompletionResult?
+
+    /// A fresh result for a refined prefix while the window is open. Providers that answer only from
+    /// a cached snapshot leave this unimplemented.
+    func completionRefreshRequested(
+        textView: TextViewController,
+        cursorPosition: CursorPosition
+    ) async -> CompletionResult?
+
+    /// Whether ``completionRefreshRequested`` can produce results the current snapshot lacks.
+    var supportsCompletionRefresh: Bool { get }
+
     // This can't be async, we need it to be snappy. At most, it should just be filtering completion items
     func completionOnCursorMove(
         textView: TextViewController,
@@ -36,4 +53,25 @@ public extension CodeSuggestionDelegate {
     func completionTriggerCharacters() -> Set<String> { [] }
     func completionWindowDidClose() { }
     func completionWindowDidSelect(item: CodeSuggestionEntry) { }
+    var supportsCompletionRefresh: Bool { false }
+
+    func completionResultRequested(
+        textView: TextViewController,
+        cursorPosition: CursorPosition
+    ) async -> CompletionResult? {
+        guard let request = await completionSuggestionsRequested(
+            textView: textView,
+            cursorPosition: cursorPosition
+        ) else {
+            return nil
+        }
+        return CompletionResult(items: request.items)
+    }
+
+    func completionRefreshRequested(
+        textView: TextViewController,
+        cursorPosition: CursorPosition
+    ) async -> CompletionResult? {
+        nil
+    }
 }
