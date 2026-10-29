@@ -480,6 +480,27 @@ final class TextViewControllerTests: XCTestCase {
         XCTAssertEqual(controller.cursorPositions[1].start.column, 1)
     }
 
+    // MARK: - Find Panel Actions
+
+    func test_findPanelActionsAreReachableFromTextView() {
+        // The Find menu sends these selectors down the responder chain starting at the text view.
+        let performFind = #selector(TextViewController.performFindPanelAction(_:))
+        let centerSelection = #selector(TextViewController.centerSelectionInViewport(_:))
+        XCTAssertTrue(controller.responds(to: performFind))
+        XCTAssertTrue(controller.responds(to: centerSelection))
+
+        var responder: NSResponder? = controller.textView
+        var reachedController = false
+        while let current = responder {
+            if current === controller {
+                reachedController = true
+                break
+            }
+            responder = current.nextResponder
+        }
+        XCTAssertTrue(reachedController, "TextViewController must be in the text view's responder chain")
+    }
+
     // MARK: - Language Fingerprints
 
     @MainActor

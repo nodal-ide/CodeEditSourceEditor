@@ -67,6 +67,17 @@ extension TextViewController {
         }
     }
 
+    /// `⌘J` — jumps to the current selection and centers it in the viewport.
+    ///
+    /// Deliberately not named `centerSelectionInVisibleArea(_:)`: `NSResponder` already declares that selector with
+    /// a no-op default, so the text view answers it before this controller is reached.
+    @objc public func centerSelectionInViewport(_ sender: Any?) {
+        guard let textView else { return }
+        let range = textView.selectedRange
+        guard range.location <= (textView.textStorage?.length ?? 0) else { return }
+        textView.scrollToRange(range, center: true)
+    }
+
     /// Find actions arrive as a menu item (tag) or as an action enum bridged to a number.
     private static func findPanelAction(from sender: Any?) -> NSFindPanelAction? {
         let rawValue: UInt?
