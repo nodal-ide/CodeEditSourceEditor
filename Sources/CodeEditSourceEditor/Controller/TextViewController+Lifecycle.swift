@@ -45,6 +45,8 @@ extension TextViewController {
             controller: self,
             delegate: self
         )
+        gutterView.showChangeRibbon = configuration.peripherals.showChangeRibbon
+        gutterView.changeRibbon.changes = lineChanges
         gutterView.updateWidthIfNeeded()
         gutterView.onToggleBreakpoint = { [weak self] line in
             self?.onToggleBreakpoint?(line)

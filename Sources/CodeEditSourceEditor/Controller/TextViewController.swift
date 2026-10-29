@@ -39,6 +39,14 @@ public class TextViewController: NSViewController {
         }
     }
 
+    /// Lines that differ from the last commit, drawn in the gutter's change ribbon. Setting this updates the gutter.
+    public var lineChanges: [LineChange] = [] {
+        didSet {
+            guard lineChanges != oldValue else { return }
+            gutterView?.changeRibbon.changes = lineChanges
+        }
+    }
+
     /// Breakpoint lines that are disabled (drawn hollow). Setting this updates the gutter.
     public var disabledBreakpointLines: Set<Int> = [] {
         didSet {
@@ -319,6 +327,9 @@ public class TextViewController: NSViewController {
 
     /// Toggle the visibility of the reformatting guide in the editor.
     public var showReformattingGuide: Bool { configuration.peripherals.showReformattingGuide }
+
+    /// Toggle the visibility of the uncommitted-change ribbon in the gutter.
+    public var showChangeRibbon: Bool { configuration.peripherals.showChangeRibbon }
 
     /// Configuration for drawing invisible characters.
     ///

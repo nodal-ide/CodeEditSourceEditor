@@ -95,6 +95,14 @@ public class GutterView: NSView {
         }
     }
 
+    /// Toggle the visibility of the uncommitted-change ribbon.
+    public var showChangeRibbon: Bool = true {
+        didSet {
+            changeRibbon.isHidden = !showChangeRibbon
+            updateWidthIfNeeded()
+        }
+    }
+
     private weak var textView: TextView?
     private weak var delegate: GutterViewDelegate?
     private var maxLineNumberWidth: CGFloat = 0
@@ -117,6 +125,9 @@ public class GutterView: NSView {
     /// The view that draws the fold decoration in the gutter.
     var foldingRibbon: LineFoldRibbonView
 
+    /// The view that draws uncommitted changes in the gutter.
+    var changeRibbon: ChangeRibbonView
+
     /// Syntax helper for determining the required space for the folding ribbon.
     private var foldingRibbonWidth: CGFloat {
         if foldingRibbon.isHidden {
@@ -124,6 +135,11 @@ public class GutterView: NSView {
         } else {
             LineFoldRibbonView.width + foldingRibbonPadding
         }
+    }
+
+    /// Space reserved for the change ribbon, to the left of the folding ribbon.
+    private var changeRibbonWidth: CGFloat {
+        changeRibbon.isHidden ? 0.0 : ChangeRibbonView.contentWidth
     }
 
     /// The gutter's y positions start at the top of the document and increase as it moves down the screen.
@@ -142,6 +158,12 @@ public class GutterView: NSView {
                 x: newValue.width - edgeInsets.trailing - foldingRibbonWidth + foldingRibbonPadding,
                 y: 0.0,
                 width: foldingRibbonWidth,
+                height: newValue.height
+            )
+            changeRibbon.frame = NSRect(
+                x: newValue.width - edgeInsets.trailing - foldingRibbonWidth - changeRibbonWidth,
+                y: 0.0,
+                width: changeRibbonWidth,
                 height: newValue.height
             )
         }
@@ -175,6 +197,7 @@ public class GutterView: NSView {
         self.delegate = delegate
 
         foldingRibbon = LineFoldRibbonView(controller: controller)
+        changeRibbon = ChangeRibbonView(controller: controller)
 
         super.init(frame: .zero)
         clipsToBounds = true
@@ -183,6 +206,7 @@ public class GutterView: NSView {
         translatesAutoresizingMaskIntoConstraints = false
         layer?.masksToBounds = true
 
+        addSubview(changeRibbon)
         addSubview(foldingRibbon)
 
         NotificationCenter.default.addObserver(
@@ -218,7 +242,7 @@ public class GutterView: NSView {
             maxLineLength = lineStorageDigits
         }
 
-        let newWidth = maxLineNumberWidth + edgeInsets.horizontal + foldingRibbonWidth
+        let newWidth = maxLineNumberWidth + edgeInsets.horizontal + foldingRibbonWidth + changeRibbonWidth
         if frame.size.width != newWidth {
             frame.size.width = newWidth
             delegate?.gutterViewWidthDidUpdate()
@@ -342,7 +366,7 @@ public class GutterView: NSView {
             return
         }
         let point = convert(event.locationInWindow, from: nil)
-        let ribbonX = frame.width - edgeInsets.trailing - foldingRibbonWidth
+        let ribbonX = frame.width - edgeInsets.trailing - foldingRibbonWidth - changeRibbonWidth
         guard point.x < ribbonX,
               let line = textView.layoutManager.textLineForPosition(point.y) else {
             super.mouseDown(with: event)
@@ -358,7 +382,7 @@ public class GutterView: NSView {
             return
         }
         let point = convert(event.locationInWindow, from: nil)
-        let ribbonX = frame.width - edgeInsets.trailing - foldingRibbonWidth
+        let ribbonX = frame.width - edgeInsets.trailing - foldingRibbonWidth - changeRibbonWidth
         guard point.x < ribbonX,
               let line = textView.layoutManager.textLineForPosition(point.y),
               let menu = onBreakpointMenu?(line.index + 1) else {

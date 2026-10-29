@@ -16,6 +16,10 @@ extension SourceEditorConfiguration {
         /// Whether to show the folding ribbon. Only available if ``showGutter`` is `true`.
         public var showFoldingRibbon: Bool
 
+        /// Whether to show the ribbon marking lines changed since the last commit. Only available if
+        /// ``showGutter`` is `true`.
+        public var showChangeRibbon: Bool
+
         /// Configuration for drawing invisible characters.
         ///
         /// See ``InvisibleCharactersConfiguration`` for more details.
@@ -30,13 +34,15 @@ extension SourceEditorConfiguration {
             showReformattingGuide: Bool = false,
             showFoldingRibbon: Bool = true,
             invisibleCharactersConfiguration: InvisibleCharactersConfiguration = .empty,
-            warningCharacters: Set<UInt16> = []
+            warningCharacters: Set<UInt16> = [],
+            showChangeRibbon: Bool = true
         ) {
             self.showGutter = showGutter
             self.showReformattingGuide = showReformattingGuide
             self.showFoldingRibbon = showFoldingRibbon
             self.invisibleCharactersConfiguration = invisibleCharactersConfiguration
             self.warningCharacters = warningCharacters
+            self.showChangeRibbon = showChangeRibbon
         }
 
         @MainActor
@@ -55,6 +61,10 @@ extension SourceEditorConfiguration {
 
             if oldConfig?.showFoldingRibbon != showFoldingRibbon {
                 controller.gutterView.showFoldingRibbon = showFoldingRibbon
+            }
+
+            if oldConfig?.showChangeRibbon != showChangeRibbon {
+                controller.gutterView.showChangeRibbon = showChangeRibbon
             }
 
             if oldConfig?.invisibleCharactersConfiguration != invisibleCharactersConfiguration {
